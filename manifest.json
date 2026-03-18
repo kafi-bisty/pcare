@@ -1,0 +1,22 @@
+{
+  "name": "পেশেন্ট কেয়ার হাসপাতাল",
+  "short_name": "Patient Care",
+  "description": "আধুনিক ডিজিটাল চিকিৎসা সেবা এবং অনলাইন সিরিয়াল সিস্টেম",
+  "start_url": "index.php",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0A2647",
+  "icons": [
+    {
+      "src": "assets/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

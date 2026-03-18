@@ -1,0 +1,236 @@
+/* ==========================================================================
+   ১. আধুনিক ভেরিয়েবল ও জেনারেল রিসেট (Stability Fixes)
+   ========================================================================== */
+:root {
+    --primary-navy: #0A2647;
+    --secondary-cyan: #2AA7E5;
+    --accent-teal: #1B9C85;
+    --light-bg: #F0F7FF;
+    --white: #FFFFFF;
+    --soft-gray: #F8FAFC;
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.05);
+    --shadow-md: 0 10px 30px rgba(10, 38, 71, 0.1);
+    --shadow-glow: 0 0 20px rgba(42, 167, 229, 0.4);
+    --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box;
+    /* ইমেজ বা এলিমেন্টের কাঁপাকাঁপি বন্ধ করা */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+html {
+    /* স্ক্রলবার জনিত কাঁপাকাঁপি বন্ধ করা */
+    overflow-y: scroll; 
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+    background-color: var(--soft-gray);
+    color: #333;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    /* বুটস্ট্র্যাপ ড্রপডাউন ওপেন হলে বডি যেন না কাঁপে */
+    padding-right: 0 !important; 
+}
+
+a { text-decoration: none; transition: var(--transition); }
+
+/* ==========================================================================
+   ২. টপ হেডার (ইমার্জেন্সি ও এনিমেশন)
+   ========================================================================== */
+.top-header {
+    background: var(--primary-navy);
+    padding: 8px 0;
+    font-size: 13px;
+    color: white;
+}
+
+.emergency-call {
+    color: var(--secondary-cyan) !important;
+    font-weight: bold;
+    animation: pulse-glow 2s infinite;
+    display: inline-block;
+}
+
+@keyframes pulse-glow {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   ৩. লোগো ও ন্যাভবার (Stability & Glass Effect)
+   ========================================================================== */
+.navbar {
+    background: rgba(193, 223, 236, 0.98) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    padding: 10px 0;
+    /* নেভিগেশন বারকে স্থির করা */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    will-change: transform;
+    z-index: 1050;
+}
+
+.main-logo {
+    height: 40px !important; 
+    width: 40px !important; 
+    border-radius: 50% !important; 
+    object-fit: cover !important; 
+    border: 2px solid var(--secondary-cyan);
+    background: white;
+    padding: 2px;
+}
+
+.nav-link {
+    color: var(--primary-navy) !important;
+    font-weight: 600;
+    margin: 0 5px;
+    padding: 8px 15px !important;
+    border-radius: 50px;
+    transition: var(--transition) !important;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--secondary-cyan) !important;
+    background: var(--light-bg);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   ৪. আধুনিক নোটিশ বার (Layout Shift Fix)
+   ========================================================================== */
+.notice-container {
+    background: #fff;
+    border-bottom: 2px solid var(--light-bg);
+    height: 45px; /* ফিক্সড হাইট দিলে কাঁপাকাঁপি বন্ধ হয় */
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.notice-label {
+    background: var(--secondary-cyan);
+    color: #fff;
+    padding: 0 25px;
+    font-weight: 700;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%);
+    z-index: 10;
+}
+
+marquee {
+    font-weight: 600;
+    color: var(--primary-navy);
+    line-height: 45px;
+}
+
+/* ==========================================================================
+   ৫. কার্ড ও বাটন (Hover Stability)
+   ========================================================================== */
+.card, .btn {
+    transition: var(--transition) !important;
+}
+
+.card:hover {
+    transform: translateY(-8px); /* অতিরিক্ত বড় না করে শুধু উপরে উঠানো নিরাপদ */
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--secondary-cyan), var(--primary-navy));
+    border: none;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   ৬. ফুটার ও রেসপন্সিভ
+   ========================================================================== */
+.footer {
+    background: var(--primary-navy);
+    color: rgba(255,255,255,0.8);
+    padding: 60px 0 20px;
+}
+
+.social-icons a {
+    width: 35px; height: 35px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    color: white; margin-right: 10px;
+}
+
+@media (max-width: 991px) {
+    .navbar-collapse {
+        background: white; padding: 20px; border-radius: 20px; margin-top: 15px;
+        box-shadow: var(--shadow-md);
+    }
+    .main-logo { height: 45px !important; width: 45px !important; }
+}
+
+/* ব্যাক বাটন */
+.back-to-dash {
+    position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+    background-color: var(--primary-navy); color: white !important;
+    padding: 10px 20px; border-radius: 50px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-weight: bold;
+}
+
+
+
+
+/* ফেসবুক প্রমোশন ব্যানার স্টাইল */
+.main-logo-large {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 5px solid var(--secondary-cyan);
+    padding: 5px;
+    background: #fff;
+    animation: glow-pulse 2s infinite;
+}
+
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(42, 167, 229, 0.7); }
+    70% { box-shadow: 0 0 0 20px rgba(42, 167, 229, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(42, 167, 229, 0); }
+}
+
+.hospital-brand-name {
+    font-size: clamp(3rem, 8vw, 5rem); /* মোবাইলে অটো ছোট হবে */
+    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+}
+
+.btn-cyan {
+    background-color: var(--secondary-cyan);
+    color: white;
+    border: none;
+    transition: 0.3s;
+}
+
+.btn-cyan:hover {
+    background-color: var(--white);
+    color: var(--primary-navy);
+    transform: scale(1.05);
+}
+
+/* ফেসবুক শেয়ার কার্ড স্টাইল */
+.share-section {
+    background: #f0f2f5;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+}

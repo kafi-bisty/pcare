@@ -1,0 +1,247 @@
+/* ===== ট্যাবলেট ডিভাইস (max-width: 992px) ===== */
+@media (max-width: 992px) {
+    .hero-title {
+        font-size: 2.8rem;
+    }
+    
+    .hero-section {
+        padding: 80px 0;
+    }
+    
+    .navbar-nav {
+        background: linear-gradient(135deg, var(--primary-navy) 0%, #1A3A5F 100%);
+        padding: 20px;
+        border-radius: 15px;
+        margin-top: 15px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 12px 15px !important;
+        margin: 2px 0;
+    }
+    
+    .dropdown-menu {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .dropdown-item {
+        color: var(--white);
+    }
+    
+    .dropdown-item:hover {
+        background: rgba(255,255,255,0.2);
+        color: var(--white);
+    }
+    
+    .doctor-card {
+        margin-bottom: 25px;
+    }
+    
+    .footer {
+        text-align: center;
+    }
+    
+    .footer h5::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .social-icons {
+        justify-content: center;
+    }
+    
+    .footer-links li {
+        justify-content: center;
+    }
+}
+
+/* ===== মোবাইল ডিভাইস (max-width: 768px) ===== */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+    
+    .hero-text {
+        font-size: 1rem;
+    }
+    
+    .hero-section {
+        padding: 60px 0;
+        text-align: center;
+    }
+    
+    .hero-buttons .btn {
+        display: block;
+        width: 100%;
+        margin: 10px 0 !important;
+    }
+    
+    .appointment-form {
+        padding: 25px;
+    }
+    
+    .form-title {
+        font-size: 1.8rem;
+    }
+    
+    .form-title::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .dashboard-card {
+        padding: 25px 20px;
+    }
+    
+    .doctor-image {
+        height: 220px;
+    }
+    
+    .doctor-name {
+        font-size: 1.3rem;
+    }
+    
+    .appointments-table {
+        font-size: 0.9rem;
+    }
+    
+    .appointments-table th,
+    .appointments-table td {
+        padding: 10px;
+        white-space: nowrap;
+    }
+    
+    .appointments-table-container {
+        overflow-x: auto;
+    }
+    
+    .prescription-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .medicine-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .medicine-name,
+    .medicine-dosage,
+    .medicine-duration,
+    .medicine-instruction {
+        min-width: auto;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .time-slots {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+    
+    .time-slot {
+        padding: 8px 5px;
+        font-size: 0.85rem;
+    }
+}
+
+/* ===== ছোট মোবাইল (max-width: 576px) ===== */
+@media (max-width: 576px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .hero-title span::after {
+        height: 10px;
+        bottom: 5px;
+    }
+    
+    .text-cyan {
+        font-size: 2rem;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+    }
+    
+    .btn-lg {
+        padding: 12px 25px;
+        font-size: 1rem;
+    }
+    
+    .dashboard-icon {
+        font-size: 3rem;
+    }
+    
+    .dashboard-card h4 {
+        font-size: 1.3rem;
+    }
+    
+    .doctor-fee span {
+        font-size: 1.2rem;
+    }
+    
+    .appointment-form {
+        padding: 20px 15px;
+    }
+    
+    .form-title {
+        font-size: 1.5rem;
+    }
+    
+    .form-control, .form-select {
+        padding: 12px 15px;
+    }
+    
+    .status-badge {
+        padding: 4px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .stat-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .footer {
+        padding: 50px 0 15px;
+    }
+    
+    .footer h5 {
+        font-size: 1.2rem;
+    }
+    
+    .social-icons a {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+
+/* ===== প্রিন্ট স্টাইল ===== */
+@media print {
+    .navbar,
+    .footer,
+    .btn,
+    .hero-buttons,
+    .social-icons {
+        display: none !important;
+    }
+    
+    .prescription-card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+}

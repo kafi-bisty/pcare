@@ -1,0 +1,30 @@
+# .htaccess ফাইল
+RewriteEngine On
+
+# www থেকে non-www রিডাইরেক্ট (প্রয়োজন অনুযায়ী)
+# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# HTTP থেকে HTTPS রিডাইরেক্ট (প্রয়োজন অনুযায়ী)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# ইনডেক্স ফাইল রিরাইট
+DirectoryIndex index.php
+
+# কাস্টম এরর পেজ
+ErrorDocument 404 /error-404.php
+ErrorDocument 500 /error-500.php
+
+# ফাইল ও ফোল্ডার লিস্টিং বন্ধ
+Options -Indexes
+
+# কিছু ফাইল এক্সেস বন্ধ
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|bak)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ইউআরএল রিরাইটিং (যদি ক্লিন ইউআরএল চান)
+# RewriteRule ^doctor/([0-9]+)/?$ modules/public/doctor-profile.php?id=$1 [NC,L]
+# RewriteRule ^appointment/([0-9]+)/?$ modules/public/book-appointment.php?doctor_id=$1 [NC,L]
