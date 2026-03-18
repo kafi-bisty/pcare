@@ -1,12 +1,12 @@
 <?php
-// ১. এরর দেখার জন্য (যাতে ৫০০ এরর না এসে আসল সমস্যা দেখায়)
+// ১. এরর রিপোর্টিং
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// ২. সরাসরি লাইভ ডাটাবেজ কানেকশন (ইনিফিনিটি ফ্রি সার্ভার তথ্য অনুযায়ী)
+// ২. সরাসরি লাইভ ডাটাবেজ কানেকশন
 $servername = "sql108.infinityfree.com";
 $username = "if0_41421837";
-$password = "w6slJzLdiNhUI"; // আপনার পাসওয়ার্ডটি এখানে দেওয়া হলো
+$password = "w6slJzLdiNhUI"; 
 $dbname = "if0_41421837_pcarebd";
 
 $conn = mysqli_connect($servername, $username, $password, $dbname);
@@ -15,7 +15,6 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// ইউনিকোড সাপোর্ট (বাংলার জন্য)
 mysqli_set_charset($conn, 'utf8mb4');
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
@@ -27,10 +26,10 @@ if(!isset($_GET['id']) || empty($_GET['id'])) {
 
 $id = mysqli_real_escape_string($conn, $_GET['id']);
 
-// ৪. ডাটা আনা
+// ৪. সংশোধিত ডাটা কুয়েরি (a.appointment_id এর বদলে a.id ব্যবহার করা হয়েছে)
 $query = mysqli_query($conn, "SELECT p.*, 
           d.name as doc_name, d.qualification as doc_qual, d.specialization, d.chamber_no,
-          a.patient_name, a.age, a.gender, a.appointment_id 
+          a.patient_name, a.age, a.gender, a.id as appointment_serial 
           FROM prescriptions p 
           JOIN doctors d ON p.doctor_id = d.id 
           JOIN appointments a ON p.appointment_id = a.id 
@@ -39,7 +38,7 @@ $query = mysqli_query($conn, "SELECT p.*,
 $data = mysqli_fetch_assoc($query);
 
 if(!$data) {
-    die("<h2 style='text-align:center; margin-top:50px;'>Prescription not found in database!</h2>");
+    die("<h2 style='text-align:center; margin-top:50px;'>Prescription not found!</h2>");
 }
 
 // ৫. কিউআর কোড জেনারেট
@@ -96,7 +95,8 @@ $qr_api = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
         <span>রোগী: <b><?php echo $data['patient_name']; ?></b></span>
         <span>বয়স: <b><?php echo $data['age']; ?>Y</b></span>
         <span>তারিখ: <b><?php echo date('d/m/Y', strtotime($data['created_at'])); ?></b></span>
-        <span>ID: <b>#<?php echo $data['appointment_id']; ?></b></span>
+        <!-- এখানে appointment_serial ব্যবহার করা হয়েছে -->
+        <span>ID: <b>#<?php echo $data['appointment_serial']; ?></b></span>
     </section>
 
     <div class="main-content">
