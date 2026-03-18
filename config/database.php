@@ -1,10 +1,24 @@
 <?php
-// database.php - ডাটাবেজ কানেকশন ফাইল
+// database.php - অটোমেটিক কানেকশন ডিটেকশন ফাইল
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'patient_care_hospital');
+// আপনার পিসিতে (Localhost) চলছে নাকি অনলাইনে (Online) তা চেক করুন
+if ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1') {
+    
+    // লোকালহোস্টের (XAMPP) কনফিগারেশন
+    define('DB_HOST', 'localhost');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+    define('DB_NAME', 'patient_care_hospital');
+
+} else {
+    
+    // অনলাইন (InfinityFree) এর কনফিগারেশন
+    define('DB_HOST', 'sql108.infinityfree.com');
+    define('DB_USER', 'if0_41421837');
+    define('DB_PASS', 'w6slJzLdiNhUI'); // এখানে আপনার আসল পাসওয়ার্ড দিন
+    define('DB_NAME', 'if0_41421837_pcarebd');
+
+}
 
 // ডাটাবেজ কানেকশন তৈরি
 $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
