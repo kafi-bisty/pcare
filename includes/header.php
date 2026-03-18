@@ -1,4 +1,5 @@
 <?php
+
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 $root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 require_once $root . 'config/constants.php'; 
