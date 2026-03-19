@@ -1,5 +1,5 @@
 <?php
-// ১. ডাটাবেজ এবং সেশন সবার আগে (Redirect এরর এড়াতে)
+// ১. ডাটাবেজ এবং সেশন চেক
 include_once '../../config/database.php';
 include_once '../../config/constants.php';
 include_once '../../config/functions.php';
@@ -12,26 +12,34 @@ if (!isset($_SESSION['reception_id']) || $_SESSION['user_role'] != 'reception') 
     exit;
 }
 
-// ৩. নোটিশ আপডেট লজিক
+// ৩. নোটিশ আপডেট বা সেভ লজিক
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_notice'])) {
     $new_notice = mysqli_real_escape_string($conn, $_POST['notice_text']);
     
-    // ডাটাবেজে আপডেট করা (আইডি ১ এর জন্য)
-    $update_query = "UPDATE site_notices SET notice_text = '$new_notice' WHERE id = 1";
+    // চেক করা ১ নম্বর আইডি আছে কি না
+    $check_query = mysqli_query($conn, "SELECT id FROM site_notices WHERE id = 1");
     
-    if (mysqli_query($conn, $update_query)) {
+    if (mysqli_num_rows($check_query) > 0) {
+        // যদি থাকে তবে আপডেট করো
+        $sql = "UPDATE site_notices SET notice_text = '$new_notice' WHERE id = 1";
+    } else {
+        // না থাকলে নতুন ইনসার্ট করো
+        $sql = "INSERT INTO site_notices (id, notice_text) VALUES (1, '$new_notice')";
+    }
+    
+    if (mysqli_query($conn, $sql)) {
         $_SESSION['success'] = "নোটিশটি সফলভাবে আপডেট করা হয়েছে!";
-        // বাটন চাপলে ড্যাশবোর্ডে ফিরে যাবে
         header("Location: dashboard.php");
         exit;
     } else {
-        $_SESSION['error'] = "দুঃখিত, নোটিশ আপডেট করা যায়নি।";
+        $_SESSION['error'] = "ডাটাবেজ এরর: " . mysqli_error($conn);
     }
 }
 
 // ৪. বর্তমান নোটিশ ডাটাবেজ থেকে আনা
 $notice_res = mysqli_query($conn, "SELECT notice_text FROM site_notices WHERE id = 1");
 $notice_data = mysqli_fetch_assoc($notice_res);
+$current_text = ($notice_data) ? $notice_data['notice_text'] : "";
 
 include_once '../../includes/header.php';
 ?>
@@ -39,29 +47,23 @@ include_once '../../includes/header.php';
 <div class="container py-5" style="min-height: 80vh;">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <!-- হেডার এবং ব্যাক বাটন -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold text-navy"><i class="fas fa-bullhorn me-2 text-danger"></i>নোটিশ বোর্ড ম্যানেজমেন্ট</h3>
-                <a href="dashboard.php" class="btn btn-outline-secondary rounded-pill btn-sm px-4 shadow-sm">
-                    <i class="fas fa-arrow-left me-1"></i> ড্যাশবোর্ড
-                </a>
+                <a href="dashboard.php" class="btn btn-outline-secondary rounded-pill btn-sm px-4">ড্যাশবোর্ড</a>
             </div>
 
-            <!-- নোটিশ এডিট কার্ড -->
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header p-4 text-white text-center" style="background: linear-gradient(135deg, var(--primary-navy), var(--secondary-cyan)); border:none;">
                     <h5 class="mb-0 fw-bold">ওয়েবসাইটের নোটিশ পরিবর্তন করুন</h5>
-                    <p class="small mb-0 opacity-75">এখানে যা লিখবেন তা সবার উপরে স্ক্রল করবে</p>
                 </div>
                 
                 <div class="card-body p-4 p-md-5 bg-white">
                     <form action="" method="POST">
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-navy small">বর্তমান নোটিশ টেক্সট:</label>
-                            <textarea name="notice_text" class="form-control rounded-4 p-3 shadow-sm border-light bg-light" rows="6" placeholder="আপনার নোটিশটি এখানে লিখুন..." required><?php echo $notice_data['notice_text']; ?></textarea>
+                            <label class="form-label fw-bold text-navy small">নোটিশ টেক্সট লিখুন:</label>
+                            <textarea name="notice_text" class="form-control rounded-4 p-3 shadow-sm border-light bg-light" rows="6" required><?php echo $current_text; ?></textarea>
                             <div class="form-text mt-3 text-muted">
-                                <i class="fas fa-info-circle me-1 text-info"></i> 
-                                <b>টিপস:</b> জরুরি ফোন নম্বর বা নতুন সেবার ঘোষণা এখানে দিতে পারেন।
+                                <i class="fas fa-info-circle me-1 text-info"></i> এখানে যা লিখবেন তা পুরো ওয়েবসাইটের ওপরের নোটিশ বারে দেখা যাবে।
                             </div>
                         </div>
 

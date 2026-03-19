@@ -66,7 +66,7 @@ include_once '../../includes/header.php';
                         </div>
                         <div class="col-6">
                             <label class="small text-muted d-block text-uppercase">ডাক্তার</label>
-                            <span class="fw-bold text-primary">ডা. <?php echo $data['doc_name']; ?></span>
+                            <span class="fw-bold text-primary"> <?php echo $data['doc_name']; ?></span>
                         </div>
                         <div class="col-6 text-end">
                             <label class="small text-muted d-block text-uppercase">তারিখ</label>
@@ -84,7 +84,7 @@ include_once '../../includes/header.php';
                 </div>
                 
                 <div class="card-footer bg-light p-3 text-center border-0">
-                    <small class="text-muted">কলেজ রোড, বরগুনা | হেল্পলাইন: +৮৮০ ১২৩৪ ৫৬৭৮৯০</small>
+                    <small class="text-muted">কলেজ রোড, বরগুনা | হেল্পলাইন: +01331434347</small>
                 </div>
             </div>
 

@@ -28,10 +28,107 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .emergency-fixed { color: var(--secondary-cyan) !important; font-weight: 800; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .navbar { background: white !important; border-bottom: 1px solid #eee; }
-        .notice-container { background: #E5F2FF; height: 35px; border-bottom: 1px solid var(--secondary-cyan); overflow: hidden; }
-        .notice-label { background: #ff4757; color: white; padding: 0 15px; font-weight: bold; height: 100%; display: flex; align-items: center; font-size: 12px; }
-        .header-spacer { height: 145px; }
-        marquee { font-weight: 700; color: var(--primary-navy); line-height: 35px; }
+        
+/* ==========================================================================
+   আধুনিক মুভিং নোটিশ (Premium Style)
+   ========================================================================== */
+.notice-container {
+    background: #ffffff; /* সাদা ব্যাকগ্রাউন্ড */
+    height: 45px;
+    border-bottom: 2px solid var(--light-bg);
+    overflow: hidden;
+    position: relative;
+    z-index: 1000;
+}
+
+/* নোটিশ লেবেল (লাল গ্রেডিয়েন্ট) */
+.notice-label {
+    background: linear-gradient(45deg, #ff4757, #ff6b81);
+    color: white;
+    padding: 0 25px;
+    font-weight: 800;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 10;
+    white-space: nowrap;
+    /* আধুনিক শেপ */
+    clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%);
+    box-shadow: 5px 0 15px rgba(255, 71, 87, 0.3);
+}
+
+/* স্ক্রলিং টেক্সট কন্টেইনার */
+.scrolling-text-container {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    background: #f8f9ff; /* হালকা নীলাভ আভা */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* মেইন মুভিং টেক্সট */
+.scrolling-text {
+    display: inline-block;
+    padding-left: 100%; /* লেখাটি ডান দিক থেকে শুরু হবে */
+    font-weight: 700;
+    color: var(--primary-navy);
+    font-size: 14px;
+    animation: marquee-modern 25s linear infinite; /* গতি পরিবর্তন করতে ২৫সে ব্যবহার করুন */
+}
+
+/* মাউস বা টাচ করলে লেখা থেমে যাবে */
+.scrolling-text-container:hover .scrolling-text {
+    animation-play-state: paused;
+    color: var(--secondary-cyan); /* মাউস নিলে রঙ বদলাবে */
+}
+
+/* এনিমেশন লজিক */
+@keyframes marquee-modern {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+/* মোবাইল ডিভাইসের জন্য ছোট এডজাস্টমেন্ট */
+@media (max-width: 768px) {
+    .notice-container { height: 38px; }
+    .notice-label { padding: 0 15px; font-size: 11px; }
+    .scrolling-text { font-size: 12px; animation-duration: 15s; }
+}
+
+/* ফিক্সড হেডারের জন্য কন্টেন্ট অ্যাডজাস্টমেন্ট */
+.header-spacer {
+    height: 155px; /* পিসিতে হেডারের মোট উচ্চতা (Top Header + Nav + Notice) */
+    width: 100%;
+    display: block;
+}
+
+/* মোবাইলে যখন টপ হেডার হাইড হবে, তখন স্পেসার ছোট হবে */
+@media (max-width: 991px) {
+    .header-spacer {
+        height: 110px; /* মোবাইলে হেডারের উচ্চতা কম থাকে */
+    }
+}
+
+/* নিশ্চিত করুন ড্যাশবোর্ডের কন্টেন্ট যেন হেডারের নিচে না যায় */
+.container-fluid, .container {
+    position: relative;
+    z-index: 1;
+}
+
+/* হেডার যেন সবসময় সবার উপরে থাকে */
+.master-header {
+    z-index: 2000 !important;
+}
+
+
+
+
+
     </style>
 </head>
 <body>
@@ -84,16 +181,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </nav>
 
-    <div class="notice-container d-flex align-items-center">
-        <div class="notice-label shadow-sm">নোটিশ</div>
-        <marquee behavior="scroll" direction="left" onmouseover="this.stop();" onmouseout="this.start();">
+    
+<!-- ৩. আধুনিক ও ডাইনামিক মুভিং নোটিশ বার -->
+<!-- ৩. আধুনিক ও ডাইনামিক মুভিং নোটিশ বার -->
+<div class="notice-container d-flex align-items-center shadow-sm">
+    <!-- লাল এনিমেটেড ব্যাজ -->
+    <div class="notice-label shadow-sm">
+        <i class="fas fa-bullhorn me-2"></i><?php echo $lang['notice_title'] ?? 'নোটিশ'; ?>
+    </div>
+    
+    <div class="scrolling-text-container">
+        <div class="scrolling-text">
             <?php 
                 $n_res = mysqli_query($conn, "SELECT notice_text FROM site_notices WHERE id = 1");
                 $n_row = mysqli_fetch_assoc($n_res);
-                echo $n_row['notice_text'] ?? 'পেশেন্ট কেয়ার হাসপাতালে স্বাগতম!';
+                $notice = $n_row['notice_text'] ?? 'পেশেন্ট কেয়ার হাসপাতালে আপনাকে স্বাগতম! অভিজ্ঞ ডাক্তারদের মাধ্যমে আধুনিক ও উন্নত চিকিৎসা সেবা প্রদান করা হচ্ছে।';
+                echo $notice;
             ?>
-        </marquee>
+        </div>
     </div>
+</div>
+
 </div>
 
 <div class="header-spacer"></div>
