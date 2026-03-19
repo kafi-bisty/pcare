@@ -33,6 +33,7 @@ $all_modals = ""; // সব মডাল এখানে জমা হবে
                 <p class="lead mb-4">পেশেন্ট কেয়ার হাসপাতালে আমরা দিচ্ছি ২৪ ঘণ্টা জরুরি চিকিৎসা সেবা।</p>
                 <div class="d-flex gap-3">
                     <a href="modules/public/doctors.php" class="btn btn-lg rounded-pill px-4" style="background-color: var(--secondary-cyan); color: white; border: none;">ডাক্তার খুঁজুন</a>
+                    <a href="#contact" class="btn btn-lg btn-outline-light rounded-pill px-4">যোগাযোগ করুন</a>
                 </div>
             </div>
             <div class="col-lg-6 d-none d-lg-block">
