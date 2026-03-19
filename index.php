@@ -1,65 +1,10 @@
 <?php
-
 // রুট ডিরেক্টরিতে থাকায় সরাসরি হেডার ইনক্লুড করা যাচ্ছে
 include_once 'includes/header.php';
 $today_date = date('Y-m-d');
 $today_day = date('l');
 
-
-// স্মার্ট কুয়েরি: নির্দিষ্ট তারিখ থাকলে সেটি আগে নিবে, নাহলে সাপ্তাহিক শিডিউল নিবে
-$today_docs = mysqli_query($conn, "
-    SELECT d.*, s.* FROM doctors d 
-    JOIN doctor_schedules s ON d.id = s.doctor_id 
-    WHERE (s.schedule_date = '$today_date' OR (s.day_of_week = '$today_day' AND s.schedule_date IS NULL))
-    AND s.is_available = 1 AND d.status = 'active'
-    ORDER BY s.schedule_date DESC -- তারিখ ভিত্তিক শিডিউলকে গুরুত্ব দিবে
-");
-?>
-
-
-<!-- ১. হিরো সেকশন (Banner) -->
-<section class="hero-section py-5" style="background: linear-gradient(135deg, var(--primary-navy) 0%, #1a4a7a 100%); color: white;">
-    <div class="container">
-        <div class="row align-items-center py-5">
-            <div class="col-lg-6">
-                <h1 class="display-4 fw-bold mb-3">আপনার সুস্বাস্থ্যই আমাদের <span style="color: var(--secondary-cyan);">একমাত্র লক্ষ্য</span></h1>
-                <p class="lead mb-4">পেশেন্ট কেয়ার হাসপাতালে আমরা দিচ্ছি ২৪ ঘণ্টা জরুরি চিকিৎসা সেবা এবং বিশেষজ্ঞ ডাক্তারদের পরামর্শ। আধুনিক প্রযুক্তির মাধ্যমে সঠিক রোগ নির্ণয় ও উন্নত সেবার প্রতিশ্রুতি।</p>
-                <div class="d-flex gap-3">
-                    <a href="modules/public/doctors.php" class="btn btn-lg rounded-pill px-4" style="background-color: var(--secondary-cyan); color: white; border: none;">ডাক্তার খুঁজুন</a>
-                    <a href="#contact" class="btn btn-lg btn-outline-light rounded-pill px-4">যোগাযোগ করুন</a>
-                </div>
-            </div>
-            <div class="col-lg-6 d-none d-lg-block">
-                <img src="assets/images/hero-image.png" alt="Hospital Care" class="img-fluid">
-            </div>
-        </div>
-    </div>
-</section>
-
-
-
-<!-- ==========================================================================
-   ২. আজকের বিশেষজ্ঞ ডাক্তার ও লাইভ সিরিয়াল (মাল্টি-শিফট সাপোর্ট সহ)
-   ========================================================================== -->
-    <section class="py-5 bg-white">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h6 class="text-uppercase fw-bold text-info shadow-sm d-inline-block px-3 py-1 rounded-pill mb-2" style="background: #f0faff; font-size: 12px; letter-spacing: 1px;">Live Status</h6>
-            <h2 class="fw-bold text-navy" style="color: #1a237e;">আজকের ডাক্তার ও লাইভ সিরিয়াল</h2>
-            <div class="mx-auto" style="width: 70px; height: 3px; background: #00bcd4; border-radius: 10px;"></div>
-        </div>
-     <div class="row g-4">
-           
-
-
-
-
-     
-<?php 
-$today_date = date('Y-m-d');
-$today_day = date('l');
-
-// ১. ডাটাবেজ থেকে আজকের সব শিডিউল নিয়ে আসা
+// স্মার্ট কুয়েরি: নির্দিষ্ট তারিখ থাকলে সেটি আগে নিবে
 $raw_docs = mysqli_query($conn, "
     SELECT d.*, s.id as sched_id, s.current_serial, s.max_patients, s.start_time, s.end_time, s.schedule_date 
     FROM doctors d 
@@ -69,7 +14,7 @@ $raw_docs = mysqli_query($conn, "
     ORDER BY s.start_time ASC
 ");
 
-// ২. ডাটাগুলোকে ডাক্তার অনুযায়ী গ্রুপ করা
+// ডাটাগুলোকে ডাক্তার অনুযায়ী গ্রুপ করা
 $doctors_array = [];
 while($row = mysqli_fetch_assoc($raw_docs)) {
     $doctors_array[$row['id']]['info'] = $row; 
@@ -77,147 +22,146 @@ while($row = mysqli_fetch_assoc($raw_docs)) {
 }
 
 $all_modals = ""; // সব মডাল এখানে জমা হবে
-
-if(!empty($doctors_array)):
-    foreach($doctors_array as $doctor_id => $data):
-        $doc = $data['info'];
-        $modal_id = "docModal_" . $doc['id'];
-        $img = !empty($doc['image']) ? $doc['image'] : 'default-doctor.jpg'; 
-        $img_url = BASE_URL . "assets/images/doctors/" . $img;
-?>
-    <!-- ডাক্তার কার্ড ডিসপ্লে -->
-    <div class="col-lg-4 col-md-6">
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden h-100 border-top border-primary border-4">
-            <div class="card-body p-4 text-center">
-                <div class="position-relative d-inline-block mb-3">
-                    <img src="<?php echo $img_url; ?>" class="rounded-circle shadow-sm border border-3 border-white" width="100" height="100" style="object-fit:cover;">
-                    <span class="position-absolute bottom-0 end-0 badge rounded-circle bg-success p-2 border border-2 border-white animate-pulse"></span>
-                </div>
-                
-                <h5 class="fw-bold text-navy mb-1"><?php echo $doc['name']; ?></h5>
-                <p class="small text-primary fw-bold mb-1"><?php echo $doc['specialization']; ?></p>
-                <p class="text-muted mb-3" style="font-size: 10px;"><i class="fas fa-graduation-cap me-1"></i> <?php echo $doc['qualification']; ?></p>
-
-                <!-- শিফট বা স্লট লুপ -->
-                <?php foreach($data['slots'] as $slot): ?>
-                    <div class="rounded-4 p-2 mb-2 border shadow-sm" style="background-color: #f8f9ff;">
-                        <div class="row align-items-center g-0">
-                            <div class="col-5 border-end text-center">
-                                <p class="text-muted mb-0" style="font-size: 8px; font-weight:bold;">সিরিয়াল</p>
-                                <h4 class="fw-bold text-danger mb-0">#<?php echo $slot['current_serial']; ?></h4>
-                            </div>
-                            <div class="col-7 text-center">
-                                <p class="text-muted mb-0" style="font-size: 8px; font-weight:bold;">সময়সূচি</p>
-                                <strong class="text-navy" style="font-size: 10px;">
-                                    <?php echo date('h:i A', strtotime($slot['start_time'])); ?> - <?php echo date('h:i A', strtotime($slot['end_time'])); ?>
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-
-                <div class="d-grid gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-primary rounded-pill btn-sm fw-bold shadow-none" data-bs-toggle="modal" data-bs-target="#<?php echo $modal_id; ?>">
-                        প্রোফাইল ও বিস্তারিত <i class="fas fa-info-circle ms-1"></i>
-                    </button>
-                    <a href="modules/public/book-appointment.php?doctor_id=<?php echo $doc['id']; ?>" class="btn btn-primary rounded-pill py-2 shadow-sm fw-bold">
-                        সিরিয়াল নিন <i class="fas fa-calendar-plus ms-1"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <?php 
-    // --- মডাল/পপ-আপ তৈরি লজিক ---
-    $slots_info_html = "";
-    foreach($data['slots'] as $slot) {
-        $type_badge = $slot['schedule_date'] ? '<span class="badge bg-danger">একক তারিখ</span>' : '<span class="badge bg-primary">প্রতি সপ্তাহ</span>';
-        $display_date = $slot['schedule_date'] ? date('d M, Y', strtotime($slot['schedule_date'])) : 'সাপ্তাহিক শিডিউল';
-        
-        $slots_info_html .= '
-        <div class="p-3 mb-2 rounded-4 border bg-light shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span class="fw-bold text-navy small">'.$display_date.'</span>
-                '.$type_badge.'
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="small"><i class="far fa-clock me-1 text-info"></i> '.date('h:i A', strtotime($slot['start_time'])).' - '.date('h:i A', strtotime($slot['end_time'])).'</span>
-                <span class="fw-bold text-danger">সিরিয়াল: #'.$slot['current_serial'].'</span>
-            </div>
-        </div>';
-    }
-
-    $all_modals .= '
-    <div class="modal fade" id="'.$modal_id.'" tabindex="-1" aria-hidden="true" style="z-index: 99999;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
-            <div class="modal-content border-0 rounded-5 overflow-hidden shadow-2xl">
-                <!-- হেডার -->
-                <div class="modal-header border-0 p-4 text-white" style="background: linear-gradient(135deg, #0A2647 0%, #2AA7E5 100%);">
-                    <div class="d-flex align-items-center">
-                        <img src="'.$img_url.'" class="rounded-circle border border-3 border-white shadow me-3" width="70" height="70" style="object-fit:cover; background:#fff;">
-                        <div>
-                            <h5 class="modal-title fw-bold mb-0">'.$doc['name'].'</h5>
-                            <p class="mb-0 opacity-75 small" style="font-size: 11px;">'.$doc['qualification'].'</p>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body p-4 bg-white">
-                    <!-- বিশেষজ্ঞতা -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold small mb-2 text-navy border-bottom pb-1"><i class="fas fa-stethoscope me-2 text-primary"></i>বিশেষজ্ঞতা ও দক্ষতা:</h6>
-                        <p class="small text-muted" style="line-height: 1.6;">'.(!empty($doc['expertise']) ? $doc['expertise'] : 'সঠিক রোগ নির্ণয় ও চিকিৎসায় বিশেষ অভিজ্ঞ।').'</p>
-                    </div>
-
-                    <!-- সব শিফট এর তথ্য -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold small mb-3 text-navy border-bottom pb-1"><i class="fas fa-calendar-alt me-2 text-primary"></i>আজকের সময়সূচি:</h6>
-                        '.$slots_info_html.'
-                    </div>
-
-                    <!-- চেম্বার এবং বায়ো -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12">
-                            <div class="p-3 rounded-4 border-start border-4 border-info bg-light">
-                                <h6 class="fw-bold small mb-1 text-navy">চেম্বার লোকেশন:</h6>
-                                <p class="mb-0 small fw-bold">রুম নং: '.$doc['chamber_no'].' (নিচ তলা)</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- কন্টাক্ট বক্স -->
-                    <div class="rounded-4 p-3 text-center text-white shadow-sm" style="background: #0A2647;">
-                        <p class="mb-0 x-small opacity-75">সিরিয়াল বুকিং হটলাইন:</p>
-                        <h5 class="fw-bold mb-0">০১৩৩১-৪৩৪৩৪৭</h5>
-                    </div>
-                </div>
-
-                <div class="modal-footer border-0 p-3 pt-0 bg-white">
-                    <a href="modules/public/book-appointment.php?doctor_id='.$doc['id'].'" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-lg">সিরিয়াল বুকিং করুন</a>
-                </div>
-            </div>
-        </div>
-    </div>';
 ?>
 
-<?php endforeach; else: ?>
-    <div class="col-12 text-center py-5 text-muted">আজ কোনো ডাক্তারের চেম্বার নেই।</div>
-<?php endif; ?>
-
-
-
-
-<!-- সব জমানো মডালগুলো এখানে প্রিন্ট হবে -->
-<?php echo $all_modals; ?>
-
+<!-- ১. হিরো সেকশন -->
+<section class="hero-section py-5" style="background: linear-gradient(135deg, var(--primary-navy) 0%, #1a4a7a 100%); color: white;">
+    <div class="container">
+        <div class="row align-items-center py-5">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">আপনার সুস্বাস্থ্যই আমাদের <span style="color: var(--secondary-cyan);">একমাত্র লক্ষ্য</span></h1>
+                <p class="lead mb-4">পেশেন্ট কেয়ার হাসপাতালে আমরা দিচ্ছি ২৪ ঘণ্টা জরুরি চিকিৎসা সেবা।</p>
+                <div class="d-flex gap-3">
+                    <a href="modules/public/doctors.php" class="btn btn-lg rounded-pill px-4" style="background-color: var(--secondary-cyan); color: white; border: none;">ডাক্তার খুঁজুন</a>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <img src="assets/images/hero-image.png" alt="Hospital" class="img-fluid">
+            </div>
         </div>
     </div>
 </section>
 
-<!-- সব মডাল এখানে প্রিন্ট হবে -->
+<!-- ২. আজকের ডাক্তার সেকশন -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h6 class="text-uppercase fw-bold text-info px-3 py-1 rounded-pill mb-2 shadow-sm d-inline-block" style="background: #f0faff; font-size: 12px;">Live Status</h6>
+            <h2 class="fw-bold text-navy">আজকের ডাক্তার ও লাইভ সিরিয়াল</h2>
+            <div class="mx-auto" style="width: 70px; height: 3px; background: #00bcd4; border-radius: 10px;"></div>
+        </div>
+        
+        <div class="row g-4">
+            <?php 
+            if(!empty($doctors_array)):
+                foreach($doctors_array as $doctor_id => $data):
+                    $doc = $data['info'];
+                    $modal_id = "docModal_" . $doc['id'];
+                    $img = !empty($doc['image']) ? $doc['image'] : 'default-doctor.jpg'; 
+                    $img_url = BASE_URL . "assets/images/doctors/" . $img;
+            ?>
+            <!-- ডাক্তার কার্ড -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden h-100 border-top border-primary border-4 transition-hover">
+                    <div class="card-body p-4 text-center">
+                        <img src="<?php echo $img_url; ?>" class="rounded-circle shadow-sm border border-3 border-white mb-3" width="100" height="100" style="object-fit:cover;">
+                        <h5 class="fw-bold text-navy mb-1"><?php echo $doc['name']; ?></h5>
+                        <p class="small text-primary fw-bold mb-1"><?php echo $doc['specialization']; ?></p>
+                        <p class="text-muted mb-3" style="font-size: 10px;"><i class="fas fa-graduation-cap me-1"></i> <?php echo $doc['qualification']; ?></p>
+                        <?php foreach($data['slots'] as $slot): ?>
+                            <div class="rounded-4 p-2 mb-2 border shadow-sm" style="background-color: #f8f9ff;">
+                                <div class="row align-items-center g-0">
+                                    <div class="col-5 border-end"><h4 class="fw-bold text-danger mb-0">#<?php echo $slot['current_serial']; ?></h4></div>
+                                    <div class="col-7"><strong class="text-navy" style="font-size: 10px;"><?php echo date('h:i A', strtotime($slot['start_time'])); ?> - <?php echo date('h:i A', strtotime($slot['end_time'])); ?></strong></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-primary rounded-pill btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#<?php echo $modal_id; ?>">প্রোফাইল ও বিস্তারিত</button>
+                            <a href="modules/public/book-appointment.php?doctor_id=<?php echo $doc['id']; ?>" class="btn btn-primary rounded-pill py-2 shadow-sm fw-bold">সিরিয়াল নিন</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <?php 
+            // মডালগুলো ভেরিয়েবলে জমা করা (যাতে পেজের নিচে প্রিন্ট করা যায়)
+            $slots_html = "";
+            foreach($data['slots'] as $slot) {
+                $display_date = $slot['schedule_date'] ? date('d M, Y', strtotime($slot['schedule_date'])) : 'সাপ্তাহিক শিডিউল';
+                $slots_html .= '
+                <div class="p-3 mb-2 rounded-4 border bg-light shadow-sm">
+                    <div class="d-flex justify-content-between small fw-bold"><span>'.$display_date.'</span></div>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <span class="small"><i class="far fa-clock text-info"></i> '.date('h:i A', strtotime($slot['start_time'])).' - '.date('h:i A', strtotime($slot['end_time'])).'</span>
+                        <span class="fw-bold text-danger">সিরিয়াল: #'.$slot['current_serial'].'</span>
+                    </div>
+                </div>';
+            }
+
+            $all_modals .= '
+            <div class="modal fade" id="'.$modal_id.'" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 rounded-5 overflow-hidden shadow-2xl">
+                        <div class="modal-header border-0 p-4 text-white" style="background: linear-gradient(135deg, #0A2647 0%, #2AA7E5 100%);">
+                            <div class="d-flex align-items-center">
+                                <img src="'.$img_url.'" class="rounded-circle border border-3 border-white me-3" width="70" height="70" style="object-fit:cover; background:#fff;">
+                                <div><h5 class="modal-title fw-bold mb-0">'.$doc['name'].'</h5><small class="opacity-75">'.$doc['qualification'].'</small></div>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4 bg-white">
+                            <h6 class="fw-bold text-navy border-bottom pb-1 mb-3">বিশেষজ্ঞতা:</h6>
+                            <p class="small text-muted">'.($doc['expertise'] ?: 'সঠিক রোগ নির্ণয় ও চিকিৎসায় বিশেষ অভিজ্ঞ।').'</p>
+                            <h6 class="fw-bold text-navy border-bottom pb-1 mb-3">আজকের সময়সূচি:</h6>
+                            '.$slots_html.'
+                            <div class="p-3 rounded-4 border-start border-4 border-info bg-light mt-3">
+                                <h6 class="fw-bold small mb-1">চেম্বার লোকেশন:</h6>
+                                <p class="mb-0 small fw-bold">রুম নং: '.$doc['chamber_no'].'</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-3 bg-white">
+                            <a href="modules/public/book-appointment.php?doctor_id='.$doc['id'].'" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-lg">সিরিয়াল বুকিং করুন</a>
+                        </div>
+                    </div>
+                </div>
+            </div>';
+            ?>
+            <?php endforeach; else: ?>
+                <div class="col-12 text-center py-5 text-muted">আজ কোনো ডাক্তারের চেম্বার নেই।</div>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
+
+
+<!-- ৪. অতিরিক্ত সিএসএস ফিক্স -->
+<style>
+   
+    /* মডালকে সবকিছুর উপরে আনার জন্য */
+    .modal { 
+        z-index: 99999 !important; 
+    }
+    /* মডালের পেছনের কালো আবছা অংশকে ঠিক করা */
+    .modal-backdrop { 
+        z-index: 99998 !important; 
+    }
+    
+    /* যদি মডালের উপরের অংশ হেডারের নিচে ঢাকা পড়ে যায় */
+    .modal-dialog {
+        margin-top: 80px !important; /* আপনার হেডার যতটা চওড়া সেই অনুযায়ী এটি বাড়াতে পারেন */
+    }
+
+    .transition-hover { transition: transform 0.3s; }
+    .transition-hover:hover { transform: translateY(-10px); }
+    .text-navy { color: #0A2647; }
+</style>
+
+<!-- সব মডাল পেজের একদম শেষে প্রিন্ট করা হলো -->
 <?php echo $all_modals; ?>
+
+
 
 
 <!-- অতিরিক্ত স্টাইল -->
@@ -260,7 +204,6 @@ if(!empty($doctors_array)):
         </div>
     </div>
 </section>
-
 
 <!-- ১. আধুনিক টু-পার্ট প্রমোশনাল ব্যানার -->
 <section class="hero-banner py-5" style="background: linear-gradient(135deg, var(--primary-navy) 0%, #1a4a7a 100%); position: relative; overflow: hidden; min-height: 500px;">

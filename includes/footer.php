@@ -174,3 +174,4 @@
     
     @media (max-width: 768px) { .footer-brand-section { text-align: center; display: flex; flex-direction: column; align-items: center; } }
     </style>
+    
