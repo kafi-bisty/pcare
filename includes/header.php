@@ -23,8 +23,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <style>
         :root { --primary-navy: #0A2647; --secondary-cyan: #2AA7E5; }
         .master-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; background: white; }
-        .main-logo { height: 40px !important; width: 40px !important; border-radius: 50% !important; object-fit: cover; border: 2px solid var(--secondary-cyan); }
-        .top-header { background: linear-gradient(90deg, var(--primary-navy) 0%, #1a4a7a 100%); color: white; font-size: 13px; }
+        .main-logo { height: 50px !important; width: 50px !important; border-radius: 50%  border: 2px solid var(--secondary-cyan); }
+        .top-header { background: linear-gradient(90deg, var(--primary-navy) 0%, #11022c 100%); color: red; font-size: 15px; }
         .emergency-fixed { color: var(--secondary-cyan) !important; font-weight: 800; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .navbar { background: white !important; border-bottom: 1px solid #eee; }
@@ -33,7 +33,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
    আধুনিক মুভিং নোটিশ (Premium Style)
    ========================================================================== */
 .notice-container {
-    background: #ffffff; /* সাদা ব্যাকগ্রাউন্ড */
+    background: #aedae7; /* সাদা ব্যাকগ্রাউন্ড */
     height: 45px;
     border-bottom: 2px solid var(--light-bg);
     overflow: hidden;
@@ -43,7 +43,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 /* নোটিশ লেবেল (লাল গ্রেডিয়েন্ট) */
 .notice-label {
-    background: linear-gradient(45deg, #ff4757, #ff6b81);
+    background: linear-gradient(45deg, #04411d, #aa0808);
     color: white;
     padding: 0 25px;
     font-weight: 800;
@@ -77,7 +77,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     padding-left: 100%; /* লেখাটি ডান দিক থেকে শুরু হবে */
     font-weight: 700;
     color: var(--primary-navy);
-    font-size: 14px;
+    font-size: 25px;
     animation: marquee-modern 25s linear infinite; /* গতি পরিবর্তন করতে ২৫সে ব্যবহার করুন */
 }
 
@@ -148,10 +148,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <nav class="navbar navbar-expand-lg py-1">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="<?php echo BASE_URL; ?>index.php">
-                <img src="<?php echo BASE_URL; ?>assets/images/logo.png" alt="Logo" class="main-logo me-2">
+                <img src="<?php echo BASE_URL; ?>assets/images/logo.png" alt="Logo" class="main-logo me-2" >
                 <div>
                     <span class="d-block fw-bold lh-1 text-navy">পেশেন্ট কেয়ার</span>
-                    <span class="small text-uppercase d-none d-sm-block text-cyan" style="font-size: 0.6rem;">হাসপাতাল এন্ড ডায়াগনস্টিক সেন্টার</span>
+                    <span class="small text-uppercase d-none d-sm-block text-cyan" style="font-size: 0.9rem;">হাসপাতাল এন্ড ডায়াগনস্টিক সেন্টার</span>
                 </div>
             </a>
             <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#navbarMain"><span class="navbar-toggler-icon"></span></button>
