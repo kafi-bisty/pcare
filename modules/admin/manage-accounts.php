@@ -99,6 +99,12 @@ include_once '../../includes/header.php';
              <a href="lab-billing.php" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold">
                 <i class="fas fa-file-invoice me-1"></i> ল্যাব বিলিং
             </a>
+   
+            <a href="manage-lab-tests.php" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold">
+                <i class="fas fa-file-invoice me-1"></i> ল্যাব টেস্ট ম্যানেজমেন্ট
+            </a>
+   
+
 
             <!-- ফিল্টার ফরম -->
             <form action="" method="GET" class="d-flex gap-2">
