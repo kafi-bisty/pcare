@@ -33,7 +33,7 @@ if (isset($_POST['add_service'])) {
     exit();
 }
 
-// ২.৩ ফাইনাল ডিসচার্জ ও ইনকামে যোগ (লাইন ৪৩ এর সমস্যা এখানে ছিল)
+// ২.৩ ফাইনাল ডিসচার্জ ও ইনকামে যোগ
 if (isset($_GET['discharge_id'])) {
     $id = mysqli_real_escape_string($conn, $_GET['discharge_id']);
     $data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM admissions WHERE id = '$id'"));
@@ -63,7 +63,23 @@ include_once '../../includes/header.php';
 $active_patients = mysqli_query($conn, "SELECT * FROM admissions WHERE status = 'admitted' ORDER BY id DESC");
 ?>
 
+<style>
+    :root { --navy: #0A2647; --cyan: #2AA7E5; }
+    .text-navy { color: var(--navy); }
+    .btn-outline-navy { border: 2px solid var(--navy); color: var(--navy); transition: 0.3s; }
+    .btn-outline-navy:hover { background: var(--navy); color: white; }
+</style>
+
 <div class="container py-4">
+    
+    <!-- ★ নতুন হেডার বাটন সেকশন ★ -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h3 class="fw-bold text-navy mb-0"><i class="fas fa-bed me-2"></i>পেশেন্ট এডমিশন কন্ট্রোল</h3>
+        <a href="manage-accounts.php" class="btn btn-outline-navy rounded-pill px-4 shadow-sm fw-bold">
+            <i class="fas fa-calculator me-2"></i> হিসাব খাতায় ফিরে যান
+        </a>
+    </div>
+
     <div class="row g-4">
         <!-- নতুন ভর্তি ফরম -->
         <div class="col-md-4">
@@ -73,7 +89,7 @@ $active_patients = mysqli_query($conn, "SELECT * FROM admissions WHERE status = 
                     <input type="text" name="name" class="form-control mb-2" placeholder="রোগীর নাম" required>
                     <input type="text" name="phone" class="form-control mb-2" placeholder="ফোন নম্বর" required>
                     <input type="text" name="room" class="form-control mb-3" placeholder="কেবিন/বেড নং">
-                    <button type="submit" name="admit_patient" class="btn btn-primary w-100 rounded-pill fw-bold">ভর্তি নিশ্চিত করুন</button>
+                    <button type="submit" name="admit_patient" class="btn btn-primary w-100 rounded-pill fw-bold shadow">ভর্তি নিশ্চিত করুন</button>
                 </form>
             </div>
         </div>

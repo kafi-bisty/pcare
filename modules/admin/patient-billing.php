@@ -57,12 +57,21 @@ $doctors = mysqli_query($conn, "SELECT name FROM doctors WHERE status='active'")
 ?>
 
 <div class="container py-4 no-print">
+    
+    <!-- ★ নতুন হেডার বাটন সেকশন ★ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-navy mb-0"><i class="fas fa-ticket-alt me-2 text-cyan"></i>পেশেন্ট বিলিং ও টোকেন</h3>
+        <a href="manage-accounts.php" class="btn btn-outline-navy rounded-pill px-4 shadow-sm fw-bold">
+            <i class="fas fa-calculator me-2"></i> হিসাব খাতায় ফিরে যান
+        </a>
+    </div>
+
     <div class="row g-4">
         <!-- বাম পাশ: ইনপুট ফর্ম -->
         <div class="col-md-5">
             <div class="card shadow-sm border-0 rounded-4 p-4">
                 <h5 class="fw-bold text-navy mb-4 border-bottom pb-2">
-                    <i class="fas fa-file-invoice-dollar me-2"></i>নতুন মানি রিসিট ও টোকেন
+                    <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>নতুন মানি রিসিট তৈরি
                 </h5>
                 <form action="" method="POST">
                     <div class="row g-2">
@@ -94,6 +103,7 @@ $doctors = mysqli_query($conn, "SELECT name FROM doctors WHERE status='active'")
                         <option value="ডাক্তার ফি">ডাক্তার ফি</option>
                         <option value="ল্যাব (Lab)">ল্যাব (Lab)</option>
                         <option value="ওটি (OT)">ওটি (OT)</option>
+                        <option value="সিট ভাড়া">সিট ভাড়া</option>
                     </select>
 
                     <div class="row g-2 mb-4">
@@ -127,7 +137,6 @@ $doctors = mysqli_query($conn, "SELECT name FROM doctors WHERE status='active'")
                     <hr>
                     
                     <div class="d-grid gap-2">
-                        <!-- শুধুমাত্র ছোট কালার টোকেন বাটন রাখা হয়েছে -->
                         <a href="print-token.php?id=<?php echo $print_data['id']; ?>" target="_blank" class="btn btn-cyan text-white rounded-pill py-3 fw-bold shadow-sm">
                             <i class="fas fa-ticket-alt me-2"></i> ছোট কালার টোকেন প্রিন্ট করুন
                         </a>
@@ -150,8 +159,11 @@ $doctors = mysqli_query($conn, "SELECT name FROM doctors WHERE status='active'")
 <style>
     :root { --navy: #0A2647; --cyan: #2AA7E5; }
     .text-navy { color: var(--navy); }
-    .btn-cyan { background: var(--cyan); border: none; }
-    .btn-cyan:hover { background: #2391c7; transform: translateY(-2px); transition: 0.3s; }
+    .text-cyan { color: var(--cyan); }
+    .btn-cyan { background: var(--cyan); color: white; border: none; transition: 0.3s; }
+    .btn-cyan:hover { background: #2391c7; transform: translateY(-2px); color: white; }
+    .btn-outline-navy { border: 2px solid var(--navy); color: var(--navy); font-weight: bold; transition: 0.3s; }
+    .btn-outline-navy:hover { background: var(--navy); color: white; }
     .card { transition: 0.3s; }
 </style>
 

@@ -38,16 +38,30 @@ $test_query = mysqli_query($conn, "SELECT * FROM lab_tests ORDER BY category, te
     .test-list-scroll { max-height: 65vh; overflow-y: auto; }
     .test-row { cursor: pointer; transition: 0.2s; }
     .test-row:hover { background: #eef9ff !important; }
+    
+    /* বাটন ডিজাইন */
+    .btn-outline-navy { border: 2px solid var(--navy); color: var(--navy); transition: 0.3s; font-weight: bold; }
+    .btn-outline-navy:hover { background: var(--navy); color: white; }
+
     @media print { .no-print { display: none !important; } }
 </style>
 
 <div class="container-fluid py-4 no-print">
+    
+    <!-- ★ নতুন হেডার বাটন সেকশন ★ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-navy mb-0"><i class="fas fa-microscope me-2 text-cyan"></i>ল্যাব বিলিং ম্যানেজমেন্ট</h3>
+        <a href="manage-accounts.php" class="btn btn-outline-navy rounded-pill px-4 shadow-sm">
+            <i class="fas fa-calculator me-2"></i> হিসাব খাতায় ফিরে যান
+        </a>
+    </div>
+
     <div class="row g-4">
         <!-- টেস্ট সিলেকশন -->
         <div class="col-lg-7">
             <div class="card billing-card h-100">
                 <div class="card-header bg-navy text-white d-flex justify-content-between align-items-center p-3" style="background-color: #0A2647;">
-                    <h5 class="mb-0 fw-bold"><i class="fas fa-microscope me-2 text-cyan"></i>ল্যাব টেস্ট নির্বাচন</h5>
+                    <h5 class="mb-0 fw-bold">ল্যাব টেস্ট নির্বাচন</h5>
                     <input type="text" id="testSearch" class="form-control form-control-sm w-50 rounded-pill shadow-none" placeholder="খুঁজুন...">
                 </div>
                 <div class="card-body p-0">
@@ -169,7 +183,6 @@ function calculateBill() {
     document.getElementById('net_fig').innerText = Math.round(net);
 }
 
-// ★ মেইন ফাংশন: এটি ডাটা সেভ করবে এবং প্রিন্ট করবে
 function saveAndPrint() {
     const pName = document.getElementById('p_name').value;
     const netAmount = document.getElementById('net_fig').innerText;
@@ -179,7 +192,6 @@ function saveAndPrint() {
     const btn = document.getElementById('savePrintBtn');
     btn.disabled = true; btn.innerHTML = "Saving...";
 
-    // ১. ডাটাবেজে ইনকাম হিসেবে সেভ করা (AJAX)
     let formData = new FormData();
     formData.append('ajax_action', 'save_lab_income');
     formData.append('amount', netAmount);
@@ -189,7 +201,6 @@ function saveAndPrint() {
     .then(res => res.json())
     .then(res => {
         if(res.status === 'success') {
-            // ২. প্রিন্ট প্রিভিউ সেটআপ
             document.getElementById('pr_name').innerText = pName;
             document.getElementById('pr_age').innerText = document.getElementById('p_age').value || 'N/A';
             document.getElementById('pr_phone').innerText = document.getElementById('p_phone').value || 'N/A';
@@ -211,7 +222,6 @@ function saveAndPrint() {
     });
 }
 
-// সার্চ ফিল্টার
 document.getElementById('testSearch').addEventListener('keyup', function() {
     let filter = this.value.toUpperCase();
     let rows = document.querySelectorAll('#testTable tr');
