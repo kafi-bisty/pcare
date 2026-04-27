@@ -10,248 +10,225 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-$user_role = $_SESSION['user_role']; // বর্তমান ইউজারের পদবি (admin, manager, accounts)
+$user_role = $_SESSION['user_role']; 
+$today = date('Y-m-d');
 
-// ২. পরিসংখ্যান ডাটা আনা
+// ২. উন্নত পরিসংখ্যান ডাটা আনা
+// স্টাফ ও পেশেন্ট সংখ্যা
 $doctor_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM doctors"))['total'];
 $patient_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM patients"))['total'];
 $reception_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM receptionists"))['total'];
 $total_staff = $doctor_count + $reception_count;
+
+// আজকের আর্থিক হিসাব
+$income_res = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(amount) as total FROM hospital_accounts WHERE type='income' AND date='$today'"));
+$today_income = $income_res['total'] ?? 0;
+
+$expense_res = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(amount) as total FROM hospital_accounts WHERE type='expense' AND date='$today'"));
+$today_expense = $expense_res['total'] ?? 0;
+
+// ভর্তি থাকা রোগী (IPD)
+$active_admissions = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM admissions WHERE status='admitted'"))['total'];
+
+// নতুন মেসেজ
 $new_messages = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM contact_messages WHERE status = 'unread'"))['total'];
 
 // ৩. সাম্প্রতিক ৫টি অ্যাক্টিভিটি লগ আনা
-$recent_logs = mysqli_query($conn, "SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 5");
+$recent_logs = mysqli_query($conn, "SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 6");
+
+include_once '../../includes/header.php';
 ?>
 
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>ড্যাশবোর্ড | <?php echo ucfirst($user_role); ?> প্যানেল</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ড্যাশবোর্ড | প্যানেল</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --navy: #0A2647; --cyan: #2AA7E5; }
-        body { background-color: #F8FAFC; font-family: 'Segoe UI', sans-serif; }
+        :root { --navy: #0A2647; --cyan: #2AA7E5; --dark-navy: #06182c; }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
         
-        .sidebar { height: 100vh; width: 260px; position: fixed; background: var(--navy); color: white; padding-top: 10px; z-index: 1000; }
-        .sidebar-logo { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--cyan); background: #fff; object-fit: cover; }
-        .sidebar a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; display: block; border-left: 4px solid transparent; transition: 0.3s; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid var(--cyan); }
+        /* সাইডবার স্টাইল */
+        .sidebar { height: 100vh; width: 260px; position: fixed; background: var(--navy); color: white; transition: 0.3s; z-index: 1000; }
+        .sidebar-logo { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--cyan); background: #fff; padding: 2px; }
+        .sidebar-menu a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; display: block; border-left: 4px solid transparent; transition: 0.3s; font-size: 14px; }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--cyan); }
         
-        .main-content { margin-left: 260px; padding: 30px; min-height: 100vh; }
-        .card-stat { border: none; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .btn-quick { transition: 0.3s; border: 1px solid #eee !important; border-radius: 24px; }
-        .btn-quick:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(10, 38, 71, 0.1) !important; background-color: var(--navy) !important; color: #fff !important; }
-        .btn-quick:hover i, .btn-quick:hover h6, .btn-quick:hover small { color: #fff !important; }
+        /* কন্টেন্ট স্টাইল */
+        .main-content { margin-left: 260px; padding: 30px; }
+        .stat-card { border: none; border-radius: 20px; transition: 0.3s; position: relative; overflow: hidden; color: white; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .bg-grad-navy { background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%); }
+        .bg-grad-cyan { background: linear-gradient(135deg, #2AA7E5 0%, #17a2b8 100%); }
+        .bg-grad-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .bg-grad-red { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+
+        .tool-box { background: #fff; border-radius: 24px; padding: 25px; text-align: center; text-decoration: none; display: block; border: 1px solid #e2e8f0; transition: 0.3s; height: 100%; }
+        .tool-box:hover { background: var(--navy); border-color: var(--navy); transform: translateY(-8px); }
+        .tool-box:hover h6, .tool-box:hover small { color: #fff !important; }
+        .tool-icon { font-size: 2.5rem; margin-bottom: 15px; transition: 0.3s; }
+        .tool-box:hover .tool-icon { transform: scale(1.1); color: var(--cyan) !important; }
+
+        @media (max-width: 992px) { .sidebar { margin-left: -260px; } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
 
-   
-<!-- সাইডবার শুরু -->
-<div class="sidebar shadow">
-    <!-- সাইডবার হেডার (লোগো ও নাম) -->
+<div class="sidebar shadow no-print">
     <div class="text-center py-4 border-bottom border-secondary border-opacity-25 mb-3">
         <img src="<?php echo BASE_URL; ?>assets/images/logo.png" alt="Logo" class="sidebar-logo mb-2">
-        <h5 class="fw-bold mb-0 text-white">পেশেন্ট কেয়ার</h5>
+        <h5 class="fw-bold mb-0 text-white">Patient Care</h5>
         <small class="text-info x-small text-uppercase"><?php echo $user_role; ?> Portal</small>
     </div>
     
-    <!-- ২. এইখানে আপনার দেওয়া মেনু ফিল্টারিং কোডটি বসবে -->
     <div class="sidebar-menu">
-        <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt me-2"></i>ড্যাশবোর্ড</a>
-        
-        <a href="manage-accounts.php"><i class="fas fa-calculator me-2"></i>আয়-ব্যয় হিসাব</a>
+        <a href="dashboard.php" class="active"><i class="fas fa-th-large me-2"></i>ড্যাশবোর্ড</a>
+        <a href="manage-accounts.php"><i class="fas fa-wallet me-2"></i>আয়-ব্যয় হিসাব</a>
+        <a href="admission-manager.php"><i class="fas fa-bed me-2"></i>পেশেন্ট এডমিশন</a>
+        <a href="lab-billing.php"><i class="fas fa-flask me-2"></i>ল্যাব বিলিং</a>
+        <a href="patient-billing.php"><i class="fas fa-ticket-alt me-2"></i>মানি রিসিট</a>
 
-        <!-- মালিক (Admin) ছাড়া অন্য কারো জন্য এই লিঙ্কগুলো হাইড থাকবে -->
-        <?php if($_SESSION['user_role'] == 'admin'): ?>
+        <?php if($user_role == 'admin'): ?>
+            <div class="px-3 mt-4 mb-2 small text-muted text-uppercase">Admin Control</div>
             <a href="manage-all-staff.php"><i class="fas fa-users-cog me-2"></i>স্টাফ ম্যানেজার</a>
-            <a href="activity-logs.php"><i class="fas fa-history me-2"></i>অ্যাক্টিভিটি লগ</a>
-            <a href="manage-staff-announcement.php"><i class="fas fa-bullhorn me-2"></i>বিশেষ নোটিশ</a>
-            <a href="manage-items.php"><i class="fas fa-pills me-2"></i>ওষুধ ও টেস্ট</a>
+            <a href="manage-lab-tests.php"><i class="fas fa-vial me-2"></i>টেস্ট ম্যানেজমেন্ট</a>
             <a href="manage-gallery.php"><i class="fas fa-images me-2"></i>গ্যালারি ম্যানেজ</a>
         <?php endif; ?>
-        
-        <!-- ম্যানেজার (Manager) যদি বিশেষ কিছু দেখতে পারে (ঐচ্ছিক) -->
-        <?php if($_SESSION['user_role'] == 'manager'): ?>
-            <a href="messages.php"><i class="fas fa-envelope me-2"></i>ইনবক্স দেখুন</a>
-        <?php endif; ?>
 
-        <a href="../auth/logout.php" class="text-danger mt-4"><i class="fas fa-sign-out-alt me-2"></i>লগআউট</a>
+        <a href="../auth/logout.php" class="text-danger mt-5"><i class="fas fa-power-off me-2"></i>লগআউট</a>
     </div>
 </div>
-<!-- সাইডবার শেষ -->
 
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-navy">সিস্টেম ওভারভিউ</h3>
+        <div class="badge bg-white text-navy p-2 px-3 shadow-sm rounded-pill border">
+            <i class="far fa-calendar-alt me-2"></i>আজ: <?php echo date('d M, Y'); ?>
+        </div>
+    </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <!-- ২. মেইন কন্টেন্ট -->
-    <div class="main-content">
-        <h3 class="fw-bold text-navy mb-4">স্বাগতম, আপনার ড্যাশবোর্ড</h3>
-        
-        <!-- পরিসংখ্যান কার্ডসমূহ -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-3">
-                <div class="card card-stat p-4 bg-white border-start border-primary border-5">
-                    <h6 class="text-muted small fw-bold">মোট স্টাফ</h6>
-                    <h2 class="fw-bold text-navy mb-0"><?php echo $total_staff; ?></h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-stat p-4 bg-white border-start border-success border-5">
-                    <h6 class="text-muted small fw-bold">মোট রোগী</h6>
-                    <h2 class="fw-bold text-success mb-0"><?php echo $patient_count; ?></h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-stat p-4 bg-white border-start border-info border-5">
-                    <h6 class="text-muted small fw-bold">নতুন মেসেজ</h6>
-                    <h2 class="fw-bold text-info mb-0"><?php echo $new_messages; ?></h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-stat p-4 bg-dark text-white shadow">
-                    <h6 class="small fw-bold opacity-75">সিস্টেম স্ট্যাটাস</h6>
-                    <h4 class="fw-bold mb-0 text-success">অনলাইন</h4>
-                </div>
+    <!-- পরিসংখ্যান কার্ডস -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-grad-navy p-3">
+                <small class="opacity-75">আজকের আয় (Income)</small>
+                <h3 class="fw-bold mb-0">৳ <?php echo number_format($today_income); ?></h3>
+                <i class="fas fa-chart-line position-absolute bottom-0 end-0 m-3 opacity-25 fa-2x"></i>
             </div>
         </div>
-
-        <div class="row g-4">
-            <!-- সাম্প্রতিক কার্যক্রম (Activity Log) - শুধুমাত্র এডমিন ও ম্যানেজার দেখবে -->
-            <?php if(in_array($user_role, ['admin', 'manager'])): ?>
-            <div class="col-lg-7">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h5 class="fw-bold mb-0 text-navy"><i class="fas fa-history me-2"></i>সাম্প্রতিক কার্যক্রম</h5>
-                    </div>
-                    <div class="table-responsive p-3">
-                        <table class="table table-sm table-hover small">
-                            <tbody>
-                                <?php while($log = mysqli_fetch_assoc($recent_logs)): ?>
-                                    <tr>
-                                        <td class="py-2 border-0">
-                                            <strong><?php echo $log['user_name']; ?></strong> 
-                                            <span class="text-muted small"><?php echo $log['details']; ?></span>
-                                            <div class="text-end x-small opacity-50"><?php echo date('h:i A', strtotime($log['created_at'])); ?></div>
-                                        </td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <?php else: ?>
-            <div class="col-lg-7">
-                <div class="card border-0 shadow-sm rounded-4 p-5 h-100 text-center">
-                    <i class="fas fa-chart-line fa-4x text-light mb-3"></i>
-                    <h5 class="text-muted">হিসাবরক্ষক প্যানেলে স্বাগতম</h5>
-                    <p class="small text-muted">আপনার জন্য নির্ধারিত টুলসগুলো নিচে দেওয়া হলো।</p>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- কুইক লিঙ্ক (ডান পাশে) -->
-            <div class="col-lg-5">
-                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                    <h5 class="fw-bold mb-4 text-navy">কুইক লিঙ্ক</h5>
-                    <div class="d-grid gap-2">
-                        <?php if($user_role == 'admin'): ?>
-                            <a href="add-staff-unified.php" class="btn btn-primary rounded-pill py-2 shadow-sm border-0" style="background:var(--navy)">
-                                <i class="fas fa-plus-circle me-1"></i> নতুন স্টাফ যোগ করুন
-                            </a>
-                        <?php endif; ?>
-                        
-                        <a href="manage-accounts.php" class="btn btn-light rounded-pill py-2 border">
-                            <i class="fas fa-calculator me-1 text-primary"></i> আয়-ব্যয় হিসাব দেখুন
-                        </a>
-
-                        <?php if(in_array($user_role, ['admin', 'manager'])): ?>
-                            <a href="manage-staff-announcement.php" class="btn btn-light rounded-pill py-2 border">
-                                <i class="fas fa-bullhorn me-1 text-warning"></i> স্টাফ নোটিশ আপডেট
-                            </a>
-                            <a href="manage-gallery.php" class="btn btn-light rounded-pill py-2 border">
-                                <i class="fas fa-images me-1 text-info"></i> গ্যালারি ম্যানেজ
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-grad-red p-3">
+                <small class="opacity-75">আজকের ব্যয় (Expense)</small>
+                <h3 class="fw-bold mb-0">৳ <?php echo number_format($today_expense); ?></h3>
+                <i class="fas fa-shopping-cart position-absolute bottom-0 end-0 m-3 opacity-25 fa-2x"></i>
             </div>
         </div>
-
-        <!-- ম্যানেজমেন্ট টুলস গ্রিড (নিচে) -->
-        <div class="mt-5 pt-2">
-            <h4 class="fw-bold mb-4 text-navy">ম্যানেজমেন্ট টুলস</h4>
-            <div class="row g-3">
-                
-                <!-- ১. হিসাব বাটন (Admin, Manager, Accounts সবাই দেখবে) -->
-                <div class="col-md-4 col-lg-3">
-                    <a href="manage-accounts.php" class="btn btn-white w-100 py-4 shadow-sm btn-quick bg-white text-decoration-none">
-                        <i class="fas fa-calculator text-primary fa-2x mb-2 d-block"></i>
-                        <h6 class="fw-bold mb-0 text-navy">Hospital Accounts</h6>
-                        <small class="text-muted small">আয় ও ব্যয়ের হিসাব</small>
-                    </a>
-                </div>
-
-                <!-- ২. স্টাফ ম্যানেজার (Admin ও Manager দেখবে) -->
-                <?php if(in_array($user_role, ['admin', 'manager'])): ?>
-                <div class="col-md-4 col-lg-3">
-                    <a href="manage-all-staff.php" class="btn btn-white w-100 py-4 shadow-sm btn-quick bg-white text-decoration-none">
-                        <i class="fas fa-users-cog text-warning fa-2x mb-2 d-block"></i>
-                        <h6 class="fw-bold mb-0 text-navy">Staff Manager</h6>
-                        <small class="text-muted small">মেম্বার তালিকা ও এডিট</small>
-                    </a>
-                </div>
-                <?php endif; ?>
-
-                <!-- ৩. ইনবক্স (Admin ও Manager দেখবে) -->
-                <?php if(in_array($user_role, ['admin', 'manager'])): ?>
-                <div class="col-md-4 col-lg-3">
-                    <a href="messages.php" class="btn btn-white w-100 py-4 shadow-sm btn-quick bg-white text-decoration-none">
-                        <i class="fas fa-envelope-open-text text-info fa-2x mb-2 d-block"></i>
-                        <h6 class="fw-bold mb-0 text-navy">Patient Inbox</h6>
-                        <small class="text-muted small">রোগীদের বার্তা দেখুন</small>
-                    </a>
-                </div>
-                <?php endif; ?>
-
-                <!-- ৪. নতুন মেম্বার যোগ (শুধুমাত্র Admin দেখবে) -->
-                <?php if($user_role == 'admin'): ?>
-                <div class="col-md-4 col-lg-3">
-                    <a href="add-staff-unified.php" class="btn btn-white w-100 py-4 shadow-sm btn-quick bg-white text-decoration-none">
-                        <i class="fas fa-user-plus text-success fa-2x mb-2 d-block"></i>
-                        <h6 class="fw-bold mb-0 text-navy">Add New Member</h6>
-                        <small class="text-muted small">নতুন স্টাফ নিয়োগ</small>
-                    </a>
-                </div>
-                <?php endif; ?>
-
+        <div class="col-md-3">
+            <div class="card stat-card bg-grad-cyan p-3">
+                <small class="opacity-75">ভর্তি থাকা রোগী (IPD)</small>
+                <h3 class="fw-bold mb-0"><?php echo $active_admissions; ?> জন</h3>
+                <i class="fas fa-user-injured position-absolute bottom-0 end-0 m-3 opacity-25 fa-2x"></i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-grad-green p-3">
+                <small class="opacity-75">নতুন মেসেজ (Inbox)</small>
+                <h3 class="fw-bold mb-0"><?php echo $new_messages; ?> টি</h3>
+                <i class="fas fa-envelope position-absolute bottom-0 end-0 m-3 opacity-25 fa-2x"></i>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <div class="row g-4">
+        <!-- সাম্প্রতিক লগস -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-navy mb-0">অ্যাক্টিভিটি লগ (Activity Logs)</h5>
+                    <a href="activity-logs.php" class="small text-decoration-none">সব দেখুন</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <tbody>
+                            <?php while($log = mysqli_fetch_assoc($recent_logs)): ?>
+                            <tr>
+                                <td class="py-3 border-bottom border-light">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 bg-light rounded-circle p-2 me-3">
+                                            <i class="fas fa-bolt text-warning"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-0 small fw-bold text-dark"><?php echo $log['user_name']; ?></p>
+                                            <small class="text-muted"><?php echo $log['details']; ?></small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end small text-muted"><?php echo date('h:i A', strtotime($log['created_at'])); ?></td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- শর্টকাট নেভিগেশন -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold text-navy mb-4">কুইক সার্ভিস</h5>
+                <div class="d-grid gap-3">
+                    <a href="patient-billing.php" class="btn btn-outline-primary py-3 rounded-pill fw-bold"><i class="fas fa-ticket-alt me-2"></i>মানি রিসিট কাটুন</a>
+                    <a href="lab-billing.php" class="btn btn-outline-info py-3 rounded-pill fw-bold"><i class="fas fa-flask me-2"></i>নতুন ল্যাব বিলিং</a>
+                    <a href="admission-manager.php" class="btn btn-outline-dark py-3 rounded-pill fw-bold"><i class="fas fa-bed me-2"></i>পেশেন্ট ভর্তি করুন</a>
+                </div>
+                <div class="mt-4 p-3 bg-light rounded-4 text-center">
+                    <small class="text-muted d-block mb-1">সিস্টেম আইপি: <?php echo $_SERVER['REMOTE_ADDR']; ?></small>
+                    <span class="badge bg-success rounded-pill px-3">Secure Connection</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ম্যানেজমেন্ট গ্রিড -->
+    <div class="mt-5">
+        <h4 class="fw-bold text-navy mb-4">ম্যানেজমেন্ট কন্ট্রোল</h4>
+        <div class="row g-4">
+            <div class="col-md-4 col-lg-3">
+                <a href="manage-accounts.php" class="tool-box">
+                    <i class="fas fa-calculator tool-icon text-primary"></i>
+                    <h6 class="fw-bold text-navy mb-1">Accounts</h6>
+                    <small class="text-muted">আয় ও ব্যয়ের বিবরণ</small>
+                </a>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <a href="manage-all-staff.php" class="tool-box">
+                    <i class="fas fa-user-md tool-icon text-warning"></i>
+                    <h6 class="fw-bold text-navy mb-1">Staffs</h6>
+                    <small class="text-muted">ডাক্তার ও স্টাফ লিস্ট</small>
+                </a>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <a href="manage-lab-tests.php" class="tool-box">
+                    <i class="fas fa-vial tool-icon text-danger"></i>
+                    <h6 class="fw-bold text-navy mb-1">Lab Tests</h6>
+                    <small class="text-muted">টেস্টের তালিকা ও মূল্য</small>
+                </a>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <a href="messages.php" class="tool-box">
+                    <i class="fas fa-envelope-open-text tool-icon text-info"></i>
+                    <h6 class="fw-bold text-navy mb-1">Inbox</h6>
+                    <small class="text-muted">পেশেন্টদের মেসেজ</small>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include_once '../../includes/footer.php'; ?>
 </body>
 </html>
