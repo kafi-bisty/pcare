@@ -8,17 +8,17 @@
         <div class="row g-4 mb-5">
             
             <!-- ১. প্রতিষ্ঠানের পরিচয় ও মালিকের প্রোফাইল -->
-            <div class="col-lg-4 col-md-6 footer-brand-section">
-                <div class="owner-image-wrapper mb-3 cursor-pointer" onclick="showOwnerInfo()" title="চেয়ারম্যান প্রোফাইল দেখতে ক্লিক করুন">
+            <div class="col-lg-4 col-md-6 footer-brand-section text-center text-md-start">
+                <div class="owner-image-wrapper mb-3 cursor-pointer d-inline-block d-md-block" onclick="showOwnerInfo()" title="চেয়ারম্যান প্রোফাইল দেখতে ক্লিক করুন">
                     <img src="<?php echo BASE_URL; ?>assets/images/sakib.png" alt="Chairman" class="footer-owner-img shadow-lg">
                     <div class="owner-pulse-ring"></div>
                 </div>
                 <h4 class="fw-bold text-white mb-1">পেশেন্ট কেয়ার</h4>
                 <p class="text-cyan small fw-bold text-uppercase mb-3" style="letter-spacing: 1px; font-size: 11px;">হাসপাতাল এন্ড ডায়াগনস্টিক সেন্টার</p>
                 <p class="small text-white-50 lh-lg">
-                    দক্ষ ও অভিজ্ঞ বিশেষজ্ঞ চিকিৎসকদের সমন্বয়ে আমরা দিচ্ছি আধুনিক চিকিৎসা সেবা। সঠিক রোগ নির্ণয় এবং রোগীর দ্রুত সুস্থতাই আমাদের একমাত্র লক্ষ্য।
+                    আধুনিক প্রযুক্তি ও বিশেষজ্ঞ চিকিৎসকদের সমন্বয়ে আমরা দিচ্ছি বিশ্বমানের স্বাস্থ্যসেবা। সঠিক রোগ নির্ণয় এবং রোগীর দ্রুত সুস্থতাই আমাদের একমাত্র লক্ষ্য।
                 </p>
-                <div class="footer-social-icons d-flex gap-2 mt-4">
+                <div class="footer-social-icons d-flex justify-content-center justify-content-md-start gap-2 mt-4">
                     <a href="#" class="social-btn facebook"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" class="social-btn twitter"><i class="fab fa-twitter"></i></a>
                     <a href="#" class="social-btn linkedin"><i class="fab fa-linkedin-in"></i></a>
@@ -110,11 +110,7 @@
     @keyframes owner-pulse { 0% { transform: scale(0.95); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
     .footer-owner-img:hover { transform: scale(1.1) rotate(5deg); }
 
-    /* লিংক ও সোশ্যাল বাটন */
-    .footer-link-list li { margin-bottom: 12px; }
-    .footer-link-list a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; transition: 0.3s; }
-    .footer-link-list a:hover { color: #2AA7E5; padding-left: 8px; }
-    
+    /* সোশ্যাল বাটন */
     .social-btn {
         width: 35px; height: 35px; background: rgba(255,255,255,0.08);
         display: flex; align-items: center; justify-content: center;
@@ -134,29 +130,33 @@
     }
     .btn-dev-badge:hover { background: #2AA7E5; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(42, 167, 229, 0.3); }
 
-    @media (max-width: 768px) { .footer-brand-section { text-align: center; display: flex; flex-direction: column; align-items: center; } }
+    .footer-link-list li { margin-bottom: 12px; }
+    .footer-link-list a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; transition: 0.3s; }
+    .footer-link-list a:hover { color: #2AA7E5; padding-left: 8px; }
 </style>
 
-<!-- SweetAlert2 এবং স্ক্রিপ্টসমূহ -->
+<!-- JavaScript Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- বুটস্ট্র্যাপের মেইন ফাইলটি সবার নিচে রাখা হয়েছে -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // ১. চেয়ারম্যান প্রোফাইল পপ-আপ
+    // ১. চেয়ারম্যান প্রোফাইল পপ-আপ
     function showOwnerInfo() {
         Swal.fire({
             title: '<span class="fw-bold" style="color:#0A2647">চেয়ারম্যান প্রোফাইল</span>',
             html: `
                 <div class="text-center">
-                    <img src="<?php echo BASE_URL; ?>assets/images/sakib.png" class="rounded-circle shadow-sm border border-3 border-info mb-3" width="120" height="120" style="object-fit:cover;">
+                    <img src="<?php echo BASE_URL; ?>assets/images/sakib.png" class="rounded-circle shadow-sm border border-3 border-info mb-3" width="120" height="120" style="object-fit:cover; background:#fff;">
                     <h5 class="fw-bold mb-1" style="color:#0A2647">ডাঃ মোঃ নাজমুল সাকিব</h5>
                     <p class="text-primary small fw-bold mb-3 text-uppercase">বিডিএস (ডেন্টিস্ট) এবং হাসপাতাল মালিক</p>
                     <div class="bg-light p-3 rounded-4 mb-3" style="font-size: 13px; font-style: italic;">
-                        "বরগুনাবাসীর দোরগোড়ায় আধুনিক চিকিৎসা পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।"
+                        "বরগুনাবাসীর দোরগোড়ায় আধুনিক এবং উন্নত মানের চিকিৎসা সেবা পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।"
                     </div>
                     <div class="d-flex justify-content-center gap-2">
                         <a href="tel:01711114534" class="btn btn-primary btn-sm rounded-pill px-4">কল করুন</a>
-                        <a href="https://wa.me/8801711114534" target="_blank" class="btn btn-success btn-sm rounded-pill px-4">হোয়াটসঅ্যাপ</a>
+                        <a href="https://wa.me/8801711114534" target="_blank" class="btn btn-success btn-sm rounded-pill px-4">WhatsApp</a>
                     </div>
                 </div>
             `,
@@ -171,11 +171,11 @@
             title: '<span class="fw-bold" style="color:#0A2647">ডেভেলপার প্রোফাইল</span>',
             html: `
                 <div class="text-center">
-                    <img src="<?php echo BASE_URL; ?>assets/images/bicharan.jpg" class="rounded-circle shadow-sm border border-3 border-primary mb-3" width="100" height="100" style="object-fit:cover;">
+                    <img src="<?php echo BASE_URL; ?>assets/images/bicharan.jpg" class="rounded-circle shadow-sm border border-3 border-primary mb-3" width="100" height="100" style="object-fit:cover; background:#fff;">
                     <h5 class="fw-bold mb-1" style="color:#0A2647">বিচরণ চন্দ্র রায়</h5>
                     <p class="text-muted small mb-3">সিনিয়র ফুল-স্ট্যাক ওয়েব ডেভেলপার</p>
                     <div class="text-start bg-light p-3 rounded-4 border small">
-                        <p class="mb-2"><strong>স্কিল:</strong> PHP, MySQL, Python, JS</p>
+                        <p class="mb-2"><strong>স্কিল:</strong> PHP, Laravel, MySQL, JS</p>
                         <p class="mb-2"><strong>ইমেইল:</strong> fiveg2024@gmail.com</p>
                         <p class="mb-0"><strong>যোগাযোগ:</strong> ০১৭৪৫০৫৬২৬৬</p>
                     </div>
