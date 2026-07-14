@@ -100,11 +100,13 @@ include_once '../../includes/header.php';
         <a href="admission-manager.php"><i class="fas fa-bed me-2"></i>পেশেন্ট এডমিশন</a>
         <a href="lab-billing.php"><i class="fas fa-flask me-2"></i>ল্যাব বিলিং</a>
         <a href="patient-billing.php"><i class="fas fa-ticket-alt me-2"></i>মানি রিসিট</a>
+        <a href="doctor-fees-report.php"><i class="fas fa-user-md me-2"></i>ডাক্তার ফি রিপোর্ট</a>
 
         <?php if(in_array($user_role, ['admin', 'manager'])): ?>
             <div class="px-3 mt-3 mb-1 small text-muted text-uppercase" style="font-size: 10px;">Management</div>
             <a href="manage-all-staff.php"><i class="fas fa-users-cog me-2"></i>স্টাফ ম্যানেজার</a>
             <a href="manage-lab-tests.php"><i class="fas fa-vial me-2"></i>টেস্ট ম্যানেজমেন্ট</a>
+           
         <?php endif; ?>
 
         <a href="../auth/logout.php" class="text-danger mt-4"><i class="fas fa-power-off me-2"></i>লগআউট</a>
