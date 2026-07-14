@@ -1,6 +1,7 @@
 <?php
 // database.php - অটোমেটিক কানেকশন ডিটেকশন ফাইল
 
+
 // আপনার পিসিতে (Localhost) চলছে নাকি অনলাইনে (Online) তা চেক করুন
 if ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1') {
     

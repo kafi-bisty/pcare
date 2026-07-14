@@ -1,128 +1,142 @@
 <?php
+/**
+ * ১. সেশন এবং লজিক কন্ট্রোল
+ */
 session_start();
 include_once '../../config/database.php';
 include_once '../../config/constants.php';
-include_once '../../config/functions.php'; // লগ ফাংশনের জন্য এটি জরুরি
+include_once '../../config/functions.php';
 
-// ১. এডমিন চেক
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: login.php");
+// লগইন চেক (অ্যাডমিন বা ম্যানেজার ছাড়া কেউ দেখতে পারবে না)
+if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], ['admin', 'manager'])) {
+    header("Location: ../auth/staff-login.php");
     exit;
 }
 
-// ২. মেসেজ স্ট্যাটাস 'read' করে দেওয়া (একসাথে সব আনরিড মেসেজ রিড হবে)
-mysqli_query($conn, "UPDATE contact_messages SET status = 'read' WHERE status = 'unread'");
+$user_role = $_SESSION['user_role'];
 
-// ৩. মেসেজ ডিলিট লজিক (অ্যাক্টিভিটি লগ সহ)
+// ২. মেসেজ ডিলিট করার লজিক
 if (isset($_GET['delete_id'])) {
-    $id = mysqli_real_escape_string($conn, $_GET['delete_id']);
-    
-    // ডিলিট করার আগে প্রেরকের নাম জেনে রাখা
-    $info_query = mysqli_query($conn, "SELECT name FROM contact_messages WHERE id = '$id'");
-    $msg_info = mysqli_fetch_assoc($info_query);
-    
-    if ($msg_info) {
-        $sender_name = $msg_info['name'];
-
-        // মেসেজটি ডিলিট করা
-        if (mysqli_query($conn, "DELETE FROM contact_messages WHERE id = '$id'")) {
-            // মালিকের জন্য লগ রেকর্ড করা (এটিই আপনার মূল চাহিদা)
-            log_activity($conn, "DELETE", "কন্টাক্ট মেসেজ ডিলিট করা হয়েছে (প্রেরক: $sender_name)");
-            $_SESSION['success'] = "মেসেজটি সফলভাবে মুছে ফেলা হয়েছে!";
-        }
+    $del_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
+    if (mysqli_query($conn, "DELETE FROM contact_messages WHERE id = '$del_id'")) {
+        $_SESSION['success'] = "মেসেজটি সফলভাবে মুছে ফেলা হয়েছে!";
     }
     header("Location: messages.php");
     exit;
 }
 
-// ৪. সব মেসেজ ডাটাবেজ থেকে আনা
-$query = mysqli_query($conn, "SELECT * FROM contact_messages ORDER BY created_at DESC");
+// ৩. মেসেজ 'পঠিত' (Mark as Read) করার লজিক
+if (isset($_GET['read_id'])) {
+    $read_id = mysqli_real_escape_string($conn, $_GET['read_id']);
+    mysqli_query($conn, "UPDATE contact_messages SET status = 'read' WHERE id = '$read_id'");
+    header("Location: messages.php");
+    exit;
+}
+
+// ৪. ডাটা সংগ্রহ
+$msg_query = mysqli_query($conn, "SELECT * FROM contact_messages ORDER BY created_at DESC");
+$total_msg = mysqli_num_rows($msg_query);
+
+include_once '../../includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <title>মেসেজ ইনবক্স | এডমিন প্যানেল</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --navy: #0A2647; --cyan: #2AA7E5; }
-        body { background-color: #f4f7f6; }
-        .sidebar { height: 100vh; width: 250px; position: fixed; background: var(--navy); color: white; padding-top: 20px; }
-        .sidebar a { color: rgba(255,255,255,0.8); text-decoration: none; padding: 15px 25px; display: block; transition: 0.3s; }
-        .sidebar a:hover { background: rgba(255,255,255,0.1); color: white; }
-        .main-content { margin-left: 250px; padding: 40px; min-height: 100vh; }
-        .message-card { border: none; border-radius: 15px; border-left: 5px solid var(--navy); transition: 0.3s; }
-        .message-card:hover { transform: scale(1.01); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .text-navy { color: var(--navy); }
-    </style>
-</head>
-<body>
+<style>
+    :root { --navy: #0A2647; --cyan: #2AA7E5; }
+    body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; margin: 0; }
+    
+    /* সাইডবার সেটিংস */
+    .sidebar { height: 100vh; width: 260px; position: fixed; top: 155px; left: 0; background: var(--navy); color: white; z-index: 1000; overflow-y: auto; transition: 0.3s; }
+    .sidebar-menu a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; display: block; border-left: 4px solid transparent; transition: 0.3s; font-size: 14px; }
+    .sidebar-menu a:hover, .sidebar-menu a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--cyan); }
+    
+    /* মেইন কন্টেন্ট এরিয়া */
+    .main-wrapper { margin-left: 260px; min-height: 80vh; display: flex; flex-direction: column; }
+    .main-content { padding: 30px; flex: 1; }
 
-    <!-- সাইডবার -->
-    <div class="sidebar shadow">
-        <div class="text-center mb-4"><h4 class="fw-bold text-white">Admin Panel</h4></div>
-        <a href="dashboard.php"><i class="fas fa-tachometer-alt me-2"></i>ড্যাশবোর্ড</a>
-        <a href="manage-all-staff.php"><i class="fas fa-users me-2"></i>স্টাফ ম্যানেজার</a>
-        <a href="messages.php" class="bg-primary text-white"><i class="fas fa-envelope me-2"></i> ইনবক্স</a>
-        <a href="activity-logs.php"><i class="fas fa-history me-2"></i>অ্যাক্টিভিটি লগ</a>
-        <a href="../auth/logout.php" class="text-danger mt-5"><i class="fas fa-sign-out-alt me-2"></i>লগআউট</a>
-           <a href="dashboard.php" class="btn btn-outline-primary rounded-pill px-4">ড্যাশবোর্ড</a>
+    .msg-card { border: none; border-radius: 15px; transition: 0.3s; background: white; border-left: 5px solid #ccc; }
+    .unread-msg { border-left-color: var(--cyan); background: #f0faff; }
+    .msg-card:hover { transform: scale(1.01); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+    @media (max-width: 992px) { .sidebar { margin-left: -260px; } .main-wrapper { margin-left: 0; } }
+</style>
+
+<!-- সাইডবার শুরু -->
+<nav class="sidebar no-print shadow">
+    <div class="py-3 text-center border-bottom border-secondary border-opacity-25 mb-2">
+        <small class="text-info x-small text-uppercase fw-bold"><?php echo $user_role; ?> Portal</small>
     </div>
+    <div class="sidebar-menu">
+        <a href="dashboard.php"><i class="fas fa-th-large me-2"></i>ড্যাশবোর্ড</a>
+        <a href="manage-accounts.php"><i class="fas fa-wallet me-2"></i>আয়-ব্যয় হিসাব</a>
+        <a href="admission-manager.php"><i class="fas fa-bed me-2"></i>পেশেন্ট এডমিশন</a>
+        <a href="messages.php" class="active"><i class="fas fa-envelope me-2"></i>ইনবক্স</a>
+        <?php if($user_role == 'admin'): ?>
+            <a href="manage-all-staff.php"><i class="fas fa-users-cog me-2"></i>স্টাফ ম্যানেজার</a>
+        <?php endif; ?>
+        <a href="../auth/logout.php" class="text-danger mt-4"><i class="fas fa-power-off me-2"></i>লগআউট</a>
+    </div>
+</nav>
 
-    <!-- মেইন কন্টেন্ট -->
+<!-- মেইন র‍্যাপার শুরু -->
+<div class="main-wrapper">
     <div class="main-content">
+        
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-navy">কন্টাক্ট মেসেজ ইনবক্স</h2>
-            <span class="badge bg-white text-navy border px-3 py-2 rounded-pill shadow-sm">মোট মেসেজ: <?php echo mysqli_num_rows($query); ?></span>
-
+            <h3 class="fw-bold text-navy mb-0"><i class="fas fa-envelope-open-text me-2 text-primary"></i>পেশেন্ট ইনবক্স</h3>
+            <span class="badge bg-white text-navy border px-3 py-2 rounded-pill shadow-sm">মোট মেসেজ: <?php echo $total_msg; ?></span>
         </div>
 
         <?php if(isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0" role="alert">
-                <i class="fas fa-check-circle me-2"></i><?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+            <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4">
+                <i class="fas fa-check-circle me-1"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
 
         <div class="row">
-            <?php if (mysqli_num_rows($query) > 0): ?>
-                <?php while ($row = mysqli_fetch_assoc($query)): ?>
-                    <div class="col-md-12 mb-3">
-                        <div class="card message-card shadow-sm p-4 bg-white">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h5 class="fw-bold mb-0 text-navy"><?php echo $row['name']; ?></h5>
-                                    <p class="text-muted small mb-0"><i class="fas fa-envelope me-1"></i><?php echo $row['email']; ?></p>
+            <div class="col-12">
+                <?php if($total_msg > 0): ?>
+                    <?php while($row = mysqli_fetch_assoc($msg_query)): ?>
+                        <div class="card msg-card mb-3 shadow-sm <?php echo ($row['status'] == 'unread') ? 'unread-msg' : ''; ?>">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold text-navy mb-1"><?php echo $row['name']; ?> 
+                                            <?php if($row['status'] == 'unread'): ?>
+                                                <span class="badge bg-danger ms-2" style="font-size: 9px;">NEW</span>
+                                            <?php endif; ?>
+                                        </h6>
+                                        <p class="small text-muted mb-2"><i class="fas fa-envelope me-1"></i> <?php echo $row['email']; ?> | <i class="fas fa-clock me-1"></i> <?php echo date('d M, h:i A', strtotime($row['created_at'])); ?></p>
+                                        <div class="text-dark bg-white p-3 rounded-3 border">
+                                            <strong>বিষয়: <?php echo $row['subject']; ?></strong><br>
+                                            <p class="mb-0 mt-2"><?php echo $row['message']; ?></p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <?php if($row['status'] == 'unread'): ?>
+                                            <a href="?read_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-light border" title="Mark as Read"><i class="fas fa-check text-success"></i></a>
+                                        <?php endif; ?>
+                                        <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-light border text-danger" onclick="return confirm('মুছে ফেলবেন?')" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                                    </div>
                                 </div>
-                                <div class="text-end">
-                                    <span class="text-muted small d-block"><?php echo date('d M, Y', strtotime($row['created_at'])); ?></span>
-                                    <span class="text-muted small"><?php echo date('h:i A', strtotime($row['created_at'])); ?></span>
-                                </div>
-                            </div>
-                            <hr class="opacity-10">
-                            <h6 class="fw-bold">বিষয়: <span class="text-primary"><?php echo $row['subject']; ?></span></h6>
-                            <p class="text-dark bg-light p-3 rounded-3 mt-2"><?php echo nl2br($row['message']); ?></p>
-                            <div class="text-end">
-                                <a href="?delete_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('আপনি কি নিশ্চিতভাবে এই মেসেজটি ডিলিট করতে চান? এটি মালিকের লগ-এ রেকর্ড হবে।')">
-                                    <i class="fas fa-trash-alt me-1"></i> মেসেজটি মুছুন
-                                </a>
                             </div>
                         </div>
-                    </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="col-12 text-center py-5">
-                    <div class="p-5 bg-white rounded-4 shadow-sm">
-                        <i class="fas fa-envelope-open fa-4x text-muted opacity-25 mb-3"></i>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                        <i class="fas fa-envelope-open fa-4x text-light mb-3"></i>
                         <h5 class="text-muted">আপনার ইনবক্স এই মুহূর্তে ফাঁকা আছে।</h5>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
-    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    </div> <!-- main-content শেষ -->
+
+    <!-- ফুটার ইনক্লুড -->
+    <?php include_once '../../includes/footer.php'; ?>
+
+</div> <!-- main-wrapper শেষ -->
+
 </body>
 </html>
