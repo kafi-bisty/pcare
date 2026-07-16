@@ -1,23 +1,39 @@
 <?php
-// ১. ডাটাবেজ এবং সেশন সবার আগে (Redirect এরর এড়াতে)
+/**
+ * ১. লজিক ও সেশন কন্ট্রোল (সবার আগে)
+ */
 include_once '../../config/database.php';
 include_once '../../config/constants.php';
 include_once '../../config/functions.php';
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
-// ২. রিসেপশন লগইন চেক
+// রিসেপশন লগইন চেক
 if (!isset($_SESSION['reception_id']) || $_SESSION['user_role'] != 'reception') {
     header("Location: ../auth/staff-login.php");
     exit;
 }
 
-// ৩. অনুমোদন লজিক (ডাটা আপডেট এবং হোয়াটসঅ্যাপ সেশন সেট)
-if (isset($_POST['approve_with_time'])) {
+// ২. অনুমোদন এবং ফি কালেকশন লজিক
+if (isset($_POST['confirm_approval'])) {
     $id = mysqli_real_escape_string($conn, $_POST['appt_id']);
     $time = mysqli_real_escape_string($conn, $_POST['arrival_time']);
+    $fee = mysqli_real_escape_string($conn, $_POST['fee']);
+    $p_name = mysqli_real_escape_string($conn, $_POST['patient_name']);
+    $doctor_id = mysqli_real_escape_string($conn, $_POST['doctor_id']);
+    $today = date('Y-m-d');
+
+    // ক. অ্যাপয়েন্টমেন্ট স্ট্যাটাস ও ডাক্তার আপডেট
+    $update_appt = "UPDATE appointments SET status = 'approved', doctor_id = '$doctor_id' WHERE id = '$id'";
     
-    if (mysqli_query($conn, "UPDATE appointments SET status = 'approved' WHERE id = '$id'")) {
+    if (mysqli_query($conn, $update_appt)) {
+        // খ. মেইন অ্যাকাউন্টসে ফি যোগ করা
+        $receipt_no = "APP-" . $id;
+        $desc = "অ্যাপয়েন্টমেন্ট ফি (রোগী: $p_name, সময়: $time)";
+        mysqli_query($conn, "INSERT INTO hospital_accounts (type, category, amount, receipt_no, description, date) 
+                             VALUES ('income', 'ডাক্তার ফি', '$fee', '$receipt_no', '$desc', '$today')");
+
+        // গ. হোয়াটসঅ্যাপ ও সাকসেস এলার্ট সেট করা
         $_SESSION['show_success_alert'] = true;
         $_SESSION['send_wa'] = $id;
         $_SESSION['wa_time'] = $time;
@@ -26,7 +42,7 @@ if (isset($_POST['approve_with_time'])) {
     exit;
 }
 
-// ৪. বাতিল লজিক
+// ৩. বাতিল লজিক
 if (isset($_GET['action']) && $_GET['action'] == 'cancel') {
     $id = mysqli_real_escape_string($conn, $_GET['id']);
     mysqli_query($conn, "UPDATE appointments SET status = 'cancelled' WHERE id = '$id'");
@@ -35,12 +51,11 @@ if (isset($_GET['action']) && $_GET['action'] == 'cancel') {
     exit;
 }
 
-// ৫. এখন হেডার ইনক্লুড করুন
 include_once '../../includes/header.php';
 
-// ৬. ডাটাবেজ থেকে তথ্য আনা
+// ৪. ডাটাবেজ থেকে পেন্ডিং তালিকা আনা (ডাক্তারের ফি সহ)
 $query = mysqli_query($conn, "
-    SELECT a.*, d.name as doctor_name, d.chamber_no 
+    SELECT a.*, d.name as doctor_name, d.chamber_no, d.fee as doctor_fee 
     FROM appointments a 
     JOIN doctors d ON a.doctor_id = d.id 
     WHERE a.status = 'pending' 
@@ -48,22 +63,22 @@ $query = mysqli_query($conn, "
 ");
 ?>
 
-<!-- স্ক্রিন কাঁপা বন্ধ করার জন্য আল্টিমেট সিএসএস প্যাচ -->
 <style>
+    :root { --navy: #0A2647; --cyan: #2AA7E5; }
     html { overflow-y: scroll !important; }
     body.modal-open { padding-right: 0 !important; overflow: hidden !important; }
-    .navbar.sticky-top, .top-header, .notice-container { padding-right: 0 !important; margin-right: 0 !important; }
-    .cursor-pointer { cursor: pointer; }
-    .badge:hover { filter: brightness(0.9); }
+    .bg-navy { background-color: var(--navy) !important; }
 </style>
 
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-navy"><i class="fas fa-calendar-check me-2 text-warning"></i>পেন্ডিং অ্যাপয়েন্টমেন্ট</h3>
-        <a href="dashboard.php" class="btn btn-outline-primary rounded-pill btn-sm px-4 shadow-sm">
-            <i class="fas fa-arrow-left me-1"></i> ড্যাশবোর্ড
-        </a>
+        <h3 class="fw-bold text-navy"><i class="fas fa-calendar-check me-2 text-warning"></i>পেন্ডিং অ্যাপয়েন্টমেন্ট ও ফি</h3>
+        <a href="dashboard.php" class="btn btn-outline-primary rounded-pill btn-sm px-4">ড্যাশবোর্ড</a>
     </div>
+
+    <?php if(isset($_SESSION['success'])): ?>
+        <div class="alert alert-danger py-2 rounded-4 mb-4"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+    <?php endif; ?>
     
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive p-3">
@@ -71,7 +86,7 @@ $query = mysqli_query($conn, "
                 <thead class="table-light text-navy">
                     <tr>
                         <th class="ps-3">রোগীর তথ্য</th>
-                        <th>ডাক্তার ও চেম্বার</th>
+                        <th>ডাক্তার ও ফি</th>
                         <th>তারিখ</th>
                         <th class="text-center">অ্যাকশন</th>
                     </tr>
@@ -82,25 +97,24 @@ $query = mysqli_query($conn, "
                             <tr>
                                 <td class="ps-3">
                                     <span class="fw-bold text-navy"><?php echo $row['patient_name']; ?></span><br>
-                                    <small class="text-muted"><i class="fas fa-phone-alt me-1"></i><?php echo $row['patient_phone']; ?> | বয়স: <?php echo $row['age']; ?></small>
+                                    <small class="text-muted"><?php echo $row['patient_phone']; ?></small>
                                 </td>
                                 <td>
-                                    <span class="small fw-bold">ডা. <?php echo $row['doctor_name']; ?></span><br>
-                                    <small class="badge bg-light text-primary border">রুম: <?php echo $row['chamber_no'] ? $row['chamber_no'] : 'N/A'; ?></small>
+                                    <span class="small fw-bold"><?php echo $row['doctor_name']; ?></span><br>
+                                    <small class="badge bg-light text-success border">ফি: ৳ <?php echo $row['doctor_fee']; ?></small>
                                 </td>
-                                <td><i class="far fa-calendar-alt me-1 text-primary"></i> <?php echo date('d M, Y', strtotime($row['appointment_date'])); ?></td>
+                                <td><?php echo date('d M, Y', strtotime($row['appointment_date'])); ?></td>
                                 <td class="text-center">
-                                    <button class="btn btn-success btn-sm rounded-pill px-4 shadow-sm btn-approve" 
-                                            data-id="<?php echo $row['id']; ?>" 
-                                            data-name="<?php echo $row['patient_name']; ?>">
-                                        অনুমোদন করুন
+                                    <button class="btn btn-success btn-sm rounded-pill px-4 shadow-sm" 
+                                            onclick="openApproveModal('<?php echo $row['id']; ?>', '<?php echo $row['patient_name']; ?>', '<?php echo $row['doctor_id']; ?>', '<?php echo $row['doctor_fee']; ?>')">
+                                        Approve & Pay
                                     </button>
                                     <a href="?action=cancel&id=<?php echo $row['id']; ?>" class="text-danger small ms-2" onclick="return confirm('বাতিল করতে চান?')">বাতিল</a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="4" class="text-center py-5 text-muted">কোনো পেন্ডিং অনুরোধ নেই।</td></tr>
+                        <tr><td colspan="4" class="text-center py-5 text-muted">কোনো পেন্ডিং অ্যাপয়েন্টমেন্ট নেই।</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -108,117 +122,143 @@ $query = mysqli_query($conn, "
     </div>
 </div>
 
-<!-- অনুমোদন করার পপ-আপ (Modal) - মাত্র ১টি লুপের বাইরে -->
-<div class="modal shadow" id="approveModal" tabindex="-1" aria-hidden="true">
+<!-- অনুমোদন ও ফি মডাল -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-navy text-white" style="background:var(--primary-navy)">
-                <h5 class="modal-title"><i class="fab fa-whatsapp me-2 text-success"></i>রোগীর সময় সেট করুন</h5>
+        <form action="" method="POST" class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title">অ্যাপ্রুভাল এবং ফি কালেকশন</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="" method="POST">
-                <div class="modal-body p-4">
-                    <input type="hidden" name="appt_id" id="modal_appt_id">
-                    <p class="small text-muted mb-3">রোগীর নাম: <b id="modal_patient_name" class="text-dark"></b></p>
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">রোগীকে আসার সময় দিন</label>
-                        <div class="input-group">
-                            <input type="text" name="arrival_time" id="modal_arrival_time" class="form-control rounded-start-3 shadow-none border-primary" placeholder="যেমন: আজ বিকাল ৫:৩০ টায়" required>
-                            <button type="button" class="btn btn-primary" onclick="setAutoTime()">
-                                <i class="fas fa-magic me-1"></i> অটো
-                            </button>
-                        </div>
-                        <div class="form-text mt-3">
-                            <label class="d-block small text-muted mb-2">কুইক টাইম সিলেক্ট করুন:</label>
-                            <span class="badge bg-light text-dark border cursor-pointer me-1 py-2 px-3 mb-1 d-inline-block" onclick="setTime('আজ বিকাল ৫:০০ টায়')">বিকাল ৫:০০</span>
-                            <span class="badge bg-light text-dark border cursor-pointer me-1 py-2 px-3 mb-1 d-inline-block" onclick="setTime('আজ সন্ধ্যা ৭:০০ টায়')">সন্ধ্যা ৭:০০</span>
-                            <span class="badge bg-light text-dark border cursor-pointer py-2 px-3 mb-1 d-inline-block" onclick="setTime('আগামীকাল সকাল ১০:০০ টায়')">কাল ১০:০০</span>
-                        </div>
+            <div class="modal-body p-4">
+                <input type="hidden" name="appt_id" id="m_appt_id">
+                <input type="hidden" name="doctor_id" id="m_doc_id">
+                <input type="hidden" name="patient_name" id="m_p_name">
+
+                <p class="mb-3">রোগী: <strong id="m_display_name"></strong></p>
+                
+                <!-- ১. ফি ডিসপ্লে -->
+                <div class="p-3 bg-light rounded-4 border text-center mb-4">
+                    <span class="small text-muted d-block">প্রদেয় ডাক্তার ফি</span>
+                    <h2 class="fw-bold text-navy mb-0">৳ <span id="m_display_fee">0</span></h2>
+                    <input type="hidden" name="fee" id="m_fee_input">
+                </div>
+
+                <!-- ২. সময় সেট করা -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">আসার সময় দিন</label>
+                    <div class="input-group">
+                        <input type="text" name="arrival_time" id="m_arrival_time" class="form-control rounded-start-3 shadow-none border-primary" placeholder="যেমন: আজ বিকাল ৫:৩০ টায়" required>
+                        <button type="button" class="btn btn-primary" onclick="setAutoTime()">অটো সময়</button>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="submit" name="approve_with_time" class="btn btn-success w-100 rounded-pill py-2 shadow-sm fw-bold">
-                        কনফার্ম ও হোয়াটসঅ্যাপ পাঠান <i class="fab fa-whatsapp ms-1"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="modal-footer border-0 pb-4">
+                <button type="submit" name="confirm_approval" class="btn btn-success w-100 rounded-pill py-2 fw-bold shadow">
+                    ফি গ্রহণ ও অ্যাপ্রুভ করুন <i class="fas fa-check-circle ms-1"></i>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- জাভাস্ক্রিপ্ট সেকশন -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script>
-// ১. বর্তমান সময় অটোমেটিক বসানো
+function openApproveModal(id, name, docId, fee) {
+    document.getElementById('m_appt_id').value = id;
+    document.getElementById('m_p_name').value = name;
+    document.getElementById('m_display_name').innerText = name;
+    document.getElementById('m_doc_id').value = docId;
+    document.getElementById('m_display_fee').innerText = fee;
+    document.getElementById('m_fee_input').value = fee;
+    $('#approveModal').modal('show');
+}
+
 function setAutoTime() {
     const now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12; hours = hours ? hours : 12;
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    document.getElementById('modal_arrival_time').value = "আজ " + hours + ":" + minutes + " " + ampm + " টায়";
+    let h = now.getHours(); let m = now.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    m = m < 10 ? '0' + m : m;
+    document.getElementById('m_arrival_time').value = "আজ " + h + ":" + m + " " + ampm + " টায়";
 }
-
-// ২. কুইক ব্যাজ ক্লিক করলে সময় সেট করা
-function setTime(val) { 
-    document.getElementById('modal_arrival_time').value = val; 
-}
-
-$(document).ready(function() {
-    // ৩. অনুমোদন বাটন ক্লিক করলে মডাল ওপেন হবে
-    $('.btn-approve').on('click', function() {
-        $('#modal_appt_id').val($(this).data('id'));
-        $('#modal_patient_name').text($(this).data('name'));
-        $('#modal_arrival_time').val(''); 
-        $('#approveModal').modal('show');
-    });
-
-    // ৪. বুটস্ট্র্যাপ স্ক্রিন কাঁপাকাঁপি বন্ধের প্যাচ
-    $('#approveModal').on('show.bs.modal', function () { 
-        $('body').css('padding-right', '0px'); 
-    });
-});
 </script>
 
-<!-- হোয়াটসঅ্যাপ ও SweetAlert পপ-আপ লজিক -->
+<!-- হোয়াটসঅ্যাপ ও SweetAlert পপ-আপ -->
+
+<!-- হোয়াটসঅ্যাপ ও SweetAlert পপ-আপ -->
 <?php if(isset($_SESSION['show_success_alert'])): 
     $id = $_SESSION['send_wa']; 
     $wa_time = $_SESSION['wa_time'];
-    $wa_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.name as d_name, d.chamber_no FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
+    // ডাক্তার ফি এবং সব তথ্য সংগ্রহ
+    $wa_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.name as d_name, d.fee as d_fee FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
     
-    // হোয়াটসঅ্যাপ মেসেজ বডি
-    $msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n\n";
-    $msg .= "🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার অ্যাপয়েন্টমেন্ট অনুমোদিত হয়েছে।\n\n";
-    $msg .= "👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n";
-    $msg .= "🔢 *সিরিয়াল:* #" . $wa_data['id'] . "\n";
-    $msg .= "🚪 *রুম:* " . ($wa_data['chamber_no'] ? $wa_data['chamber_no'] : 'N/A') . "\n";
-    $msg .= "⏰ *সময়:* " . $wa_time . "\n";
-    $msg .= "📍 *লোকেশন:* কলেজ রোড, বরগুনা।\n\n";
-    $msg .= "ধন্যবাদ।";
-
+    $wa_msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার অ্যাপয়েন্টমেন্ট অনুমোদিত হয়েছে।\n👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n⏰ *সময়:* " . $wa_time . "\n💰 *ফি:* ৳ " . number_format($wa_data['d_fee']) . " (পরিশোধিত)\nধন্যবাদ।";
     $phone = preg_replace('/^0/', '', $wa_data['patient_phone']);
-    $wa_url = "https://wa.me/880".$phone."?text=".urlencode($msg);
+    $wa_url = "https://wa.me/880".$phone."?text=".urlencode($wa_msg);
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-$(document).ready(function() {
-    Swal.fire({
-        title: 'অনুমোদন সফল!',
-        text: 'রোগীর হোয়াটসঅ্যাপে মেসেজটি পাঠিয়ে দিন।',
-        icon: 'success',
-        showCancelButton: true,
-        confirmButtonColor: '#25D366', // WhatsApp Green
-        cancelButtonColor: '#d33',
-        confirmButtonText: '<i class="fab fa-whatsapp me-2"></i> হোয়াটসঅ্যাপে পাঠান',
-        cancelButtonText: 'পরে পাঠাবো'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.open('<?php echo $wa_url; ?>', '_blank');
-        }
-    });
+Swal.fire({
+    title: 'অনুমোদন ও পেমেন্ট সফল!',
+    html: 'আপনি এখন টোকেন প্রিন্ট করতে পারেন এবং রোগীকে হোয়াটসঅ্যাপ পাঠাতে পারেন।',
+    icon: 'success',
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonColor: '#0A2647', // Navy
+    denyButtonColor: '#25D366',    // WA Green
+    cancelButtonColor: '#d33',
+    confirmButtonText: '<i class="fas fa-print me-1"></i> প্রিন্ট টোকেন',
+    denyButtonText: '<i class="fab fa-whatsapp me-1"></i> হোয়াটসঅ্যাপ',
+    cancelButtonText: 'বন্ধ করুন'
+}).then((result) => {
+    if (result.isConfirmed) {
+        // টোকেন প্রিন্ট করার জন্য নতুন উইন্ডো খুলবে
+        window.open('print-token.php?id=<?php echo $id; ?>', '_blank');
+    } else if (result.isDenied) {
+        // হোয়াটসঅ্যাপ উইন্ডো খুলবে
+        window.open('<?php echo $wa_url; ?>', '_blank');
+    }
 });
+</script>
+<?php unset($_SESSION['show_success_alert'], $_SESSION['send_wa'], $_SESSION['wa_time']); endif; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?php if(isset($_SESSION['show_success_alert'])): 
+    $id = $_SESSION['send_wa']; $wa_time = $_SESSION['wa_time'];
+    $wa_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.name as d_name FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
+    
+    $wa_msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার অ্যাপয়েন্টমেন্ট অনুমোদিত হয়েছে।\n👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n⏰ *সময়:* " . $wa_time . "\n💰 *ফি:* ৳ " . $wa_data['doctor_fee'] . " (পরিশোধিত)\nধন্যবাদ।";
+    $phone = preg_replace('/^0/', '', $wa_data['patient_phone']);
+    $wa_url = "https://wa.me/880".$phone."?text=".urlencode($wa_msg);
+?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+Swal.fire({
+    title: 'অনুমোদন ও পেমেন্ট সফল!',
+    text: 'রোগীর হোয়াটসঅ্যাপে মেসেজটি পাঠিয়ে দিন।',
+    icon: 'success',
+    showCancelButton: true,
+    confirmButtonColor: '#25D366',
+    confirmButtonText: 'হোয়াটসঅ্যাপে পাঠান',
+    cancelButtonText: 'বন্ধ করুন'
+}).then((result) => { if (result.isConfirmed) { window.open('<?php echo $wa_url; ?>', '_blank'); } });
 </script>
 <?php unset($_SESSION['show_success_alert'], $_SESSION['send_wa'], $_SESSION['wa_time']); endif; ?>
 
