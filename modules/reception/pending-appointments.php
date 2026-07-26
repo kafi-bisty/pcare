@@ -1,6 +1,6 @@
 <?php
 /**
- * ১. লজিক ও সেশন কন্ট্রোল (সবার আগে)
+ * ১. লজিক ও সেশন কন্ট্রোল
  */
 include_once '../../config/database.php';
 include_once '../../config/constants.php';
@@ -9,257 +9,199 @@ include_once '../../config/functions.php';
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 // রিসেপশন লগইন চেক
-if (!isset($_SESSION['reception_id']) || $_SESSION['user_role'] != 'reception') {
-    header("Location: ../auth/staff-login.php");
-    exit;
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'reception') {
+    header("Location: ../auth/staff-login.php"); exit;
 }
 
-// ২. অনুমোদন এবং ফি কালেকশন লজিক
-if (isset($_POST['confirm_approval'])) {
-    $id = mysqli_real_escape_string($conn, $_POST['appt_id']);
-    $time = mysqli_real_escape_string($conn, $_POST['arrival_time']);
-    $fee = mysqli_real_escape_string($conn, $_POST['fee']);
-    $p_name = mysqli_real_escape_string($conn, $_POST['patient_name']);
-    $doctor_id = mysqli_real_escape_string($conn, $_POST['doctor_id']);
-    $today = date('Y-m-d');
+$today = date('Y-m-d');
 
-    // ক. অ্যাপয়েন্টমেন্ট স্ট্যাটাস ও ডাক্তার আপডেট
-    $update_appt = "UPDATE appointments SET status = 'approved', doctor_id = '$doctor_id' WHERE id = '$id'";
-    
-    if (mysqli_query($conn, $update_appt)) {
-        // খ. মেইন অ্যাকাউন্টসে ফি যোগ করা
-        $receipt_no = "APP-" . $id;
-        $desc = "অ্যাপয়েন্টমেন্ট ফি (রোগী: $p_name, সময়: $time)";
-        mysqli_query($conn, "INSERT INTO hospital_accounts (type, category, amount, receipt_no, description, date) 
-                             VALUES ('income', 'ডাক্তার ফি', '$fee', '$receipt_no', '$desc', '$today')");
-
-        // গ. হোয়াটসঅ্যাপ ও সাকসেস এলার্ট সেট করা
-        $_SESSION['show_success_alert'] = true;
-        $_SESSION['send_wa'] = $id;
-        $_SESSION['wa_time'] = $time;
+// --- লজিক ২.১: শুধুমাত্র অনুমোদন (পেমেন্ট ছাড়া) ---
+if (isset($_GET['approve_id'])) {
+    $id = mysqli_real_escape_string($conn, $_GET['approve_id']);
+    if(mysqli_query($conn, "UPDATE appointments SET status = 'approved' WHERE id = '$id'")) {
+        $_SESSION['show_wa_only'] = $id;
+        session_write_close(); // সেশন নিশ্চিতভাবে সেভ করার জন্য
     }
-    header("Location: pending-appointments.php");
-    exit;
+    header("Location: pending-appointments.php"); exit;
 }
 
-// ৩. বাতিল লজিক
-if (isset($_GET['action']) && $_GET['action'] == 'cancel') {
-    $id = mysqli_real_escape_string($conn, $_GET['id']);
-    mysqli_query($conn, "UPDATE appointments SET status = 'cancelled' WHERE id = '$id'");
-    $_SESSION['success'] = "অ্যাপয়েন্টমেন্ট বাতিল করা হয়েছে।";
-    header("Location: pending-appointments.php");
-    exit;
+// --- লজিক ২.২: পেমেন্ট গ্রহণ ও টোকেন ইস্যু ---
+if (isset($_POST['confirm_payment'])) {
+    $appt_id = mysqli_real_escape_string($conn, $_POST['appt_id']);
+    $fee = mysqli_real_escape_string($conn, $_POST['fee']);
+    $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
+    $doc_name = mysqli_real_escape_string($conn, $_POST['doc_name']);
+
+    $receipt_no = "APP-" . $appt_id;
+    $desc = "ডক্টর ফি (রোগী: $p_name, ডাক্তার: $doc_name)";
+    
+    $sql_acc = "INSERT INTO hospital_accounts (type, category, amount, receipt_no, description, date) 
+                VALUES ('income', 'ডাক্তার ফি', '$fee', '$receipt_no', '$desc', '$today')";
+    
+    if (mysqli_query($conn, $sql_acc)) {
+        $_SESSION['show_print_token'] = $appt_id;
+        session_write_close();
+    }
+    header("Location: pending-appointments.php?status=paid"); exit;
+}
+
+// --- লজিক ২.৩: ফি ফেরত (Refund) ---
+if (isset($_GET['refund_id'])) {
+    $id = mysqli_real_escape_string($conn, $_GET['refund_id']);
+    $data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.fee FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
+    
+    if ($data) {
+        $refund_amount = $data['fee'];
+        $p_name = $data['patient_name'];
+        mysqli_query($conn, "UPDATE appointments SET status = 'cancelled' WHERE id = '$id'");
+        $desc = "টাকা ফেরত (রোগী: $p_name, সিরিয়াল: #$id)";
+        mysqli_query($conn, "INSERT INTO hospital_accounts (type, category, amount, receipt_no, description, date) 
+                             VALUES ('expense', 'অন্যান্য ব্যয়', '$refund_amount', 'REFUND-$id', '$desc', '$today')");
+        $_SESSION['msg'] = "টাকা ফেরত সফল হয়েছে।";
+        session_write_close();
+    }
+    header("Location: pending-appointments.php"); exit;
 }
 
 include_once '../../includes/header.php';
 
-// ৪. ডাটাবেজ থেকে পেন্ডিং তালিকা আনা (ডাক্তারের ফি সহ)
-$query = mysqli_query($conn, "
-    SELECT a.*, d.name as doctor_name, d.chamber_no, d.fee as doctor_fee 
-    FROM appointments a 
-    JOIN doctors d ON a.doctor_id = d.id 
-    WHERE a.status = 'pending' 
-    ORDER BY a.appointment_date ASC
-");
+// ৩. ডাটা কুয়েরি
+$pending_list = mysqli_query($conn, "SELECT a.*, d.name as doc_name FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.status = 'pending' ORDER BY a.id ASC");
+$approved_list = mysqli_query($conn, "SELECT a.*, d.name as doc_name, d.fee as doc_fee FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.status = 'approved' AND a.appointment_date = '$today' ORDER BY a.id ASC");
 ?>
 
-<style>
-    :root { --navy: #0A2647; --cyan: #2AA7E5; }
-    html { overflow-y: scroll !important; }
-    body.modal-open { padding-right: 0 !important; overflow: hidden !important; }
-    .bg-navy { background-color: var(--navy) !important; }
-</style>
-
-<div class="container py-5">
+<div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-navy"><i class="fas fa-calendar-check me-2 text-warning"></i>পেন্ডিং অ্যাপয়েন্টমেন্ট ও ফি</h3>
+        <h3 class="fw-bold text-navy"><i class="fas fa-hospital-user me-2 text-primary"></i>সিরিয়াল ও পেমেন্ট</h3>
         <a href="dashboard.php" class="btn btn-outline-primary rounded-pill btn-sm px-4">ড্যাশবোর্ড</a>
     </div>
 
-    <?php if(isset($_SESSION['success'])): ?>
-        <div class="alert alert-danger py-2 rounded-4 mb-4"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
-    <?php endif; ?>
-    
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive p-3">
-            <table class="table table-hover align-middle">
-                <thead class="table-light text-navy">
-                    <tr>
-                        <th class="ps-3">রোগীর তথ্য</th>
-                        <th>ডাক্তার ও ফি</th>
-                        <th>তারিখ</th>
-                        <th class="text-center">অ্যাকশন</th>
-                    </tr>
-                </thead>
+    <!-- সেকশন ১: পেন্ডিং -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5 overflow-hidden">
+        <div class="card-header bg-navy text-white p-3">১. পেন্ডিং রিকোয়েস্ট (অনুমোদন করুন)</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>রোগীর তথ্য</th><th>ডাক্তার</th><th class="text-center">অ্যাকশন</th></tr></thead>
                 <tbody>
-                    <?php if ($query && mysqli_num_rows($query) > 0): ?>
-                        <?php while ($row = mysqli_fetch_assoc($query)): ?>
-                            <tr>
-                                <td class="ps-3">
-                                    <span class="fw-bold text-navy"><?php echo $row['patient_name']; ?></span><br>
-                                    <small class="text-muted"><?php echo $row['patient_phone']; ?></small>
-                                </td>
-                                <td>
-                                    <span class="small fw-bold"><?php echo $row['doctor_name']; ?></span><br>
-                                    <small class="badge bg-light text-success border">ফি: ৳ <?php echo $row['doctor_fee']; ?></small>
-                                </td>
-                                <td><?php echo date('d M, Y', strtotime($row['appointment_date'])); ?></td>
-                                <td class="text-center">
-                                    <button class="btn btn-success btn-sm rounded-pill px-4 shadow-sm" 
-                                            onclick="openApproveModal('<?php echo $row['id']; ?>', '<?php echo $row['patient_name']; ?>', '<?php echo $row['doctor_id']; ?>', '<?php echo $row['doctor_fee']; ?>')">
-                                        Approve & Pay
-                                    </button>
-                                    <a href="?action=cancel&id=<?php echo $row['id']; ?>" class="text-danger small ms-2" onclick="return confirm('বাতিল করতে চান?')">বাতিল</a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr><td colspan="4" class="text-center py-5 text-muted">কোনো পেন্ডিং অ্যাপয়েন্টমেন্ট নেই।</td></tr>
-                    <?php endif; ?>
+                    <?php while($row = mysqli_fetch_assoc($pending_list)): ?>
+                    <tr>
+                        <td class="ps-3"><b><?php echo $row['patient_name']; ?></b><br><small><?php echo $row['patient_phone']; ?></small></td>
+                        <td><?php echo $row['doc_name']; ?></td>
+                        <td class="text-center">
+                            <a href="?approve_id=<?php echo $row['id']; ?>" class="btn btn-primary btn-sm rounded-pill px-3">Approve Serial</a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- সেকশন ২: অনুমোদিত -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+        <div class="card-header bg-success text-white p-3">২. অনুমোদিত সিরিয়াল (পেমেন্ট ও টোকেন)</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>সিরিয়াল #</th><th>রোগী</th><th>ডাক্তার</th><th class="text-end">ফি</th><th class="text-center">অ্যাকশন</th></tr></thead>
+                <tbody>
+                    <?php while($row = mysqli_fetch_assoc($approved_list)): 
+                        $check_pay = mysqli_query($conn, "SELECT id FROM hospital_accounts WHERE receipt_no = 'APP-{$row['id']}'");
+                        $is_paid = mysqli_num_rows($check_pay) > 0;
+                    ?>
+                    <tr>
+                        <td class="ps-3">#<?php echo $row['id']; ?></td>
+                        <td><?php echo $row['patient_name']; ?></td>
+                        <td><?php echo $row['doc_name']; ?></td>
+                        <td class="text-end">৳<?php echo $row['doc_fee']; ?></td>
+                        <td class="text-center">
+                            <?php if(!$is_paid): ?>
+                                <button class="btn btn-warning btn-sm rounded-pill px-3" onclick="payModal('<?php echo $row['id']; ?>', '<?php echo $row['patient_name']; ?>', '<?php echo $row['doc_name']; ?>', '<?php echo $row['doc_fee']; ?>')">Collect Fee</button>
+                            <?php else: ?>
+                                <a href="../admin/print-token.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-dark btn-sm"><i class="fas fa-print"></i></a>
+                                <a href="?refund_id=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm rounded-pill ms-1" onclick="return confirm('টাকা ফেরত দিবেন?')">Refund</a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- অনুমোদন ও ফি মডাল -->
-<div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+<!-- পেমেন্ট মডাল -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="" method="POST" class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header bg-navy text-white">
-                <h5 class="modal-title">অ্যাপ্রুভাল এবং ফি কালেকশন</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" name="appt_id" id="m_appt_id">
-                <input type="hidden" name="doctor_id" id="m_doc_id">
-                <input type="hidden" name="patient_name" id="m_p_name">
-
-                <p class="mb-3">রোগী: <strong id="m_display_name"></strong></p>
-                
-                <!-- ১. ফি ডিসপ্লে -->
-                <div class="p-3 bg-light rounded-4 border text-center mb-4">
-                    <span class="small text-muted d-block">প্রদেয় ডাক্তার ফি</span>
-                    <h2 class="fw-bold text-navy mb-0">৳ <span id="m_display_fee">0</span></h2>
-                    <input type="hidden" name="fee" id="m_fee_input">
-                </div>
-
-                <!-- ২. সময় সেট করা -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">আসার সময় দিন</label>
-                    <div class="input-group">
-                        <input type="text" name="arrival_time" id="m_arrival_time" class="form-control rounded-start-3 shadow-none border-primary" placeholder="যেমন: আজ বিকাল ৫:৩০ টায়" required>
-                        <button type="button" class="btn btn-primary" onclick="setAutoTime()">অটো সময়</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 pb-4">
-                <button type="submit" name="confirm_approval" class="btn btn-success w-100 rounded-pill py-2 fw-bold shadow">
-                    ফি গ্রহণ ও অ্যাপ্রুভ করুন <i class="fas fa-check-circle ms-1"></i>
-                </button>
+        <form action="" method="POST" class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-navy text-white"><h5 class="modal-title">ফি সংগ্রহ ও টোকেন</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4 text-center">
+                <input type="hidden" name="appt_id" id="m_id"><input type="hidden" name="p_name" id="m_pname"><input type="hidden" name="doc_name" id="m_dname"><input type="hidden" name="fee" id="m_fee">
+                <h6 id="d_pname"></h6>
+                <div class="p-3 bg-light rounded-4 border my-3"><h2 class="fw-bold text-navy mb-0">৳ <span id="d_fee"></span></h2></div>
+                <button type="submit" name="confirm_payment" class="btn btn-success w-100 rounded-pill py-2">Confirm Payment</button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- SweetAlert & WhatsApp Logic -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script>
-function openApproveModal(id, name, docId, fee) {
-    document.getElementById('m_appt_id').value = id;
-    document.getElementById('m_p_name').value = name;
-    document.getElementById('m_display_name').innerText = name;
-    document.getElementById('m_doc_id').value = docId;
-    document.getElementById('m_display_fee').innerText = fee;
-    document.getElementById('m_fee_input').value = fee;
-    $('#approveModal').modal('show');
-}
-
-function setAutoTime() {
-    const now = new Date();
-    let h = now.getHours(); let m = now.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
-    m = m < 10 ? '0' + m : m;
-    document.getElementById('m_arrival_time').value = "আজ " + h + ":" + m + " " + ampm + " টায়";
-}
-</script>
-
-<!-- হোয়াটসঅ্যাপ ও SweetAlert পপ-আপ -->
-
-<!-- হোয়াটসঅ্যাপ ও SweetAlert পপ-আপ -->
-<?php if(isset($_SESSION['show_success_alert'])): 
-    $id = $_SESSION['send_wa']; 
-    $wa_time = $_SESSION['wa_time'];
-    // ডাক্তার ফি এবং সব তথ্য সংগ্রহ
-    $wa_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.name as d_name, d.fee as d_fee FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
-    
-    $wa_msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার অ্যাপয়েন্টমেন্ট অনুমোদিত হয়েছে।\n👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n⏰ *সময়:* " . $wa_time . "\n💰 *ফি:* ৳ " . number_format($wa_data['d_fee']) . " (পরিশোধিত)\nধন্যবাদ।";
-    $phone = preg_replace('/^0/', '', $wa_data['patient_phone']);
-    $wa_url = "https://wa.me/880".$phone."?text=".urlencode($wa_msg);
-?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-Swal.fire({
-    title: 'অনুমোদন ও পেমেন্ট সফল!',
-    html: 'আপনি এখন টোকেন প্রিন্ট করতে পারেন এবং রোগীকে হোয়াটসঅ্যাপ পাঠাতে পারেন।',
-    icon: 'success',
-    showCancelButton: true,
-    showDenyButton: true,
-    confirmButtonColor: '#0A2647', // Navy
-    denyButtonColor: '#25D366',    // WA Green
-    cancelButtonColor: '#d33',
-    confirmButtonText: '<i class="fas fa-print me-1"></i> প্রিন্ট টোকেন',
-    denyButtonText: '<i class="fab fa-whatsapp me-1"></i> হোয়াটসঅ্যাপ',
-    cancelButtonText: 'বন্ধ করুন'
-}).then((result) => {
-    if (result.isConfirmed) {
-        // টোকেন প্রিন্ট করার জন্য নতুন উইন্ডো খুলবে
-        window.open('print-token.php?id=<?php echo $id; ?>', '_blank');
-    } else if (result.isDenied) {
-        // হোয়াটসঅ্যাপ উইন্ডো খুলবে
-        window.open('<?php echo $wa_url; ?>', '_blank');
-    }
-});
-</script>
-<?php unset($_SESSION['show_success_alert'], $_SESSION['send_wa'], $_SESSION['wa_time']); endif; ?>
+function payModal(id, pname, dname, fee) {
+    $('#m_id').val(id); $('#m_pname').val(pname); $('#m_dname').val(dname); $('#m_fee').val(fee);
+    $('#d_pname').html("রোগী: <b>" + pname + "</b>"); $('#d_fee').text(fee);
+    new bootstrap.Modal(document.getElementById('payModal')).show();
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<?php if(isset($_SESSION['show_success_alert'])): 
-    $id = $_SESSION['send_wa']; $wa_time = $_SESSION['wa_time'];
+<?php 
+// ১. শুধুমাত্র হোয়াটসঅ্যাপ পাঠানো (অনুমোদনের পর)
+if(isset($_SESSION['show_wa_only'])): 
+    $id = $_SESSION['show_wa_only'];
     $wa_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT a.*, d.name as d_name FROM appointments a JOIN doctors d ON a.doctor_id = d.id WHERE a.id = '$id'"));
     
-    $wa_msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার অ্যাপয়েন্টমেন্ট অনুমোদিত হয়েছে।\n👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n⏰ *সময়:* " . $wa_time . "\n💰 *ফি:* ৳ " . $wa_data['doctor_fee'] . " (পরিশোধিত)\nধন্যবাদ।";
-    $phone = preg_replace('/^0/', '', $wa_data['patient_phone']);
-    $wa_url = "https://wa.me/880".$phone."?text=".urlencode($wa_msg);
+    // ফোন নম্বর ফরম্যাট (০ বাদ দিয়ে ৮৮০ যোগ করা)
+    $clean_phone = preg_replace('/[^0-9]/', '', $wa_data['patient_phone']);
+    $clean_phone = ltrim($clean_phone, '0');
+    
+    $msg = "*আসসালামু আলাইকুম " . $wa_data['patient_name'] . "*\n\n🏥 *পেশেন্ট কেয়ার হাসপাতাল* থেকে আপনার সিরিয়াল অনুমোদিত হয়েছে।\n👨‍⚕️ *ডাক্তার:* ডা. " . $wa_data['d_name'] . "\n🔢 *সিরিয়াল:* #" . $wa_data['id'] . "\n📍 অনুগ্রহ করে হাসপাতালে এসে পেমেন্ট সম্পন্ন করে টোকেন সংগ্রহ করুন।";
+    $wa_url = "https://api.whatsapp.com/send?phone=880".$clean_phone."&text=".urlencode($msg);
 ?>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-Swal.fire({
-    title: 'অনুমোদন ও পেমেন্ট সফল!',
-    text: 'রোগীর হোয়াটসঅ্যাপে মেসেজটি পাঠিয়ে দিন।',
-    icon: 'success',
-    showCancelButton: true,
-    confirmButtonColor: '#25D366',
-    confirmButtonText: 'হোয়াটসঅ্যাপে পাঠান',
-    cancelButtonText: 'বন্ধ করুন'
-}).then((result) => { if (result.isConfirmed) { window.open('<?php echo $wa_url; ?>', '_blank'); } });
+    Swal.fire({
+        title: 'অনুমোদন সফল!',
+        text: 'রোগীকে হোয়াটসঅ্যাপ মেসেজ পাঠান।',
+        icon: 'success',
+        confirmButtonText: 'WhatsApp পাঠান',
+        confirmButtonColor: '#25D366'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open('<?php echo $wa_url; ?>', '_blank');
+        }
+    });
+<?php unset($_SESSION['show_wa_only']); endif; ?>
+
+<?php 
+// ২. টোকেন প্রিন্ট করা (পেমেন্টের পর)
+if(isset($_SESSION['show_print_token'])): 
+    $id = $_SESSION['show_print_token'];
+?>
+    Swal.fire({
+        title: 'পেমেন্ট সফল!',
+        text: 'এখন রোগীর টোকেনটি প্রিন্ট করুন।',
+        icon: 'success',
+        confirmButtonText: 'Print Token',
+        confirmButtonColor: '#0A2647'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open('../admin/print-token.php?id=<?php echo $id; ?>', '_blank');
+        }
+    });
+<?php unset($_SESSION['show_print_token']); endif; ?>
 </script>
-<?php unset($_SESSION['show_success_alert'], $_SESSION['send_wa'], $_SESSION['wa_time']); endif; ?>
+
+<style>
+    :root { --navy: #0A2647; }
+    .bg-navy { background-color: var(--navy) !important; }
+</style>
 
 <?php include_once '../../includes/footer.php'; ?>
