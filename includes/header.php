@@ -123,8 +123,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <a class="navbar-brand d-flex align-items-center" href="<?php echo BASE_URL; ?>index.php">
                 <img src="<?php echo BASE_URL; ?>assets/images/logo.png" alt="Logo" class="main-logo me-2">
                 <div>
-                    <span class="d-block fw-bold lh-1 text-navy fs-4"><?php echo $settings_data['hospital_name'] ?? 'পেশেন্ট কেয়ার'; ?></span>
-                    <span class="small text-uppercase d-none d-sm-block text-cyan" style="font-size: 0.7rem;">হাসপাতাল এন্ড ডায়াগনস্টিক সেন্টার</span>
+                    <span class="d-block fw-bold lh-1 text-navy fs-4"><?php echo $settings_data['hospital_name'] ?? 'পেশেন্ট কেয়ার '; ?></span>
+                    <span class="small text-uppercase d-none d-sm-block text-cyan" style="font-size: .90rem;"> এন্ড ডায়াগনস্টিক সেন্টার</span>
                 </div>
             </a>
             <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#navbarMain"><span class="navbar-toggler-icon"></span></button>
@@ -132,7 +132,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>index.php">হোম</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>modules/public/doctors.php">ডাক্তারবৃন্দ</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#services">সেবাসমূহ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#services">সেবাসমূহ</a></li>য
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#contact">যোগাযোগ</a></li>
                     
                     <?php if(isset($_SESSION['user_role'])): ?>
