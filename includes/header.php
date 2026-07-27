@@ -7,17 +7,15 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 // পাথ নির্ধারণ
 $root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 
-// ২. ডাটাবেজ এবং কনস্ট্যান্ট লোড করা (কুয়েরি করার আগেই এটি করতে হবে)
+// ২. ডাটাবেজ এবং কনস্ট্যান্ট লোড করা
 require_once $root . 'config/constants.php'; 
-require_once $root . 'config/database.php'; // এখানে $conn তৈরি হয়
+require_once $root . 'config/database.php'; 
 require_once $root . 'config/functions.php';
 
 // ৩. ডাটাবেজ থেকে গ্লোবাল সেটিংস আনা
 $settings_data = [];
 if (isset($conn)) {
-    // বাংলা লেখা ঠিকমতো আসার জন্য চারসেট সেট করা
     mysqli_set_charset($conn, "utf8mb4");
-    
     $s_res = mysqli_query($conn, "SELECT * FROM settings");
     if ($s_res) {
         while($s_row = mysqli_fetch_assoc($s_res)) {
@@ -50,18 +48,59 @@ $current_page = basename($_SERVER['PHP_SELF']);
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .navbar { background: white !important; border-bottom: 1px solid #eee; }
         
-        .notice-container { background: #e0f4ff; height: 45px; overflow: hidden; display: flex; align-items: center; }
-        .notice-label { background: linear-gradient(45deg, #d32f2f, #b71c1c); color: white; padding: 0 25px; font-weight: 800; height: 100%; display: flex; align-items: center; font-size: 13px; z-index: 10; clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%); }
-        .scrolling-text { display: inline-block; padding-left: 100%; font-weight: 700; color: var(--primary-navy); font-size: 15px; animation: marquee-modern 30s linear infinite; }
-        @keyframes marquee-modern { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        /* আপডেট করা নোটিশ বার স্টাইল */
+        .notice-container { 
+            background: #e8f5ff; 
+            height: 40px; 
+            overflow: hidden; 
+            display: flex; 
+            align-items: center; 
+            position: relative;
+            border-bottom: 1px solid #d1e8ff;
+        }
 
-        .header-spacer { height: 155px; }
-        @media (max-width: 991px) { .header-spacer { height: 110px; } }
+        .notice-label { 
+            background: #c62828; 
+            color: white; 
+            padding: 0 35px 0 15px; 
+            font-weight: bold; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            font-size: 14px; 
+            z-index: 20; 
+            clip-path: polygon(0 0, 85% 0, 100% 100%, 0% 100%); 
+            position: relative;
+        }
+
+        .scrolling-text-container {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .scrolling-text { 
+            display: inline-block; 
+            padding-left: 100%; 
+            font-weight: 600; 
+            color: #0A2647; 
+            font-size: 15px; 
+            animation: marquee-modern 25s linear infinite; 
+        }
+
+        @keyframes marquee-modern { 
+            0% { transform: translateX(0); } 
+            100% { transform: translateX(-100%); } 
+        }
+
+        .header-spacer { height: 145px; }
+        @media (max-width: 991px) { .header-spacer { height: 100px; } }
     </style>
 </head>
 <body>
 
 <div class="master-header">
+    <!-- ১. টপ হেডার -->
     <div class="top-header py-2 d-none d-md-block">
         <div class="container d-flex justify-content-between align-items-center">
             <div class="small fw-bold">
@@ -78,6 +117,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 
+    <!-- ২. নেভিগেশন বার -->
     <nav class="navbar navbar-expand-lg py-1">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="<?php echo BASE_URL; ?>index.php">
@@ -119,14 +159,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </nav>
 
-    <!-- ৩. ডাইনামিক মুভিং নোটিশ বার -->
-    <div class="notice-container d-flex align-items-center shadow-sm">
-        <div class="notice-label shadow-sm">
-            <i class="fas fa-bullhorn me-2"></i><?php echo $lang['notice_title'] ?? 'নোটিশ'; ?>
+    <!-- ৩. আপডেট করা নোটিশ বার -->
+    <div class="notice-container shadow-sm">
+        <div class="notice-label">
+            <i class="fas fa-bullhorn me-2"></i> নোটিশ
         </div>
         <div class="scrolling-text-container">
             <div class="scrolling-text">
-                <?php echo $settings_data['notice_text'] ?? 'পেশেন্ট কেয়ার হাসপাতালে আপনাকে স্বাগতম!'; ?>
+                <?php echo $settings_data['notice_text'] ?? 'পেশেন্ট কেয়ার হাসপাতালে আপনাকে স্বাগতম! উন্নত সেবাই আমাদের অঙ্গীকার।'; ?>
             </div>
         </div>
     </div>
@@ -144,3 +184,5 @@ function updateHeaderClock() {
 }
 setInterval(updateHeaderClock, 1000); updateHeaderClock();
 </script>
+</body>
+</html>
