@@ -23,6 +23,18 @@ if (!$doctor) {
     include_once '../../includes/footer.php';
     exit;
 }
+
+// ১. কিউআর কোডের জন্য তথ্য সাজানো (Dynamic Information)
+$h_name = $settings_data['hospital_name'] ?? "পেশেন্ট কেয়ার হাসপাতাল";
+$h_phone = $settings_data['hospital_phone'] ?? "০১৩৩১৪ ৩৪৩৪৭";
+
+$qr_text = "🏥 $h_name\n";
+$qr_text .= "👨‍⚕️ ডাক্তার: " . $doctor['name'] . "\n";
+$qr_text .= "🎓 ডিগ্রি: " . $doctor['qualification'] . "\n";
+$qr_text .= "🏷️ বিশেষজ্ঞ: " . $doctor['specialization'] . "\n";
+$qr_text .= "📞 ফোন: $h_phone";
+
+$profile_qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($qr_text);
 ?>
 
 <div class="container py-5">
@@ -38,44 +50,63 @@ if (!$doctor) {
     <div class="row g-4">
         <!-- বাম পাশে প্রোফাইল কার্ড -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden text-center p-4">
-                <div class="mb-4 position-relative">
-                    <img src="../../assets/images/doctors/<?php echo $doctor['image']; ?>" 
-                         class="rounded-circle shadow-sm border border-5 border-light" 
-                         width="180" height="180" 
-                         style="object-fit: cover; border-color: var(--light-bg) !important;">
-                </div>
-                
-                <h4 class="fw-bold mb-1 text-navy"><?php echo $doctor['name']; ?></h4>
-                <p class="badge rounded-pill px-3 py-2 mb-3 shadow-sm" style="background-color: var(--light-bg); color: var(--secondary-cyan); font-size: 0.9rem;">
-                    <i class="fas fa-stethoscope me-1"></i> <?php echo $doctor['specialization']; ?>
-                </p>
-
-                <div class="d-grid gap-2 mb-4">
-                    <a href="book-appointment.php?doctor_id=<?php echo $doctor['id']; ?>" class="btn btn-primary btn-lg rounded-pill shadow" style="background-color: var(--secondary-cyan); border: none;">
-                        <i class="fas fa-calendar-check me-2"></i> অ্যাপয়েন্টমেন্ট নিন
-                    </a>
-                </div>
-
-                <div class="text-start border-top pt-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="icon-sm bg-light text-primary rounded-circle me-3 text-center" style="width: 35px; height: 35px; line-height: 35px;">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                        <div>
-                            <p class="small text-muted mb-0">ভিজিট ফি</p>
-                            <span class="fw-bold text-success">৳ <?php echo $doctor['fee']; ?> (প্রতি ভিজিট)</span>
-                        </div>
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden p-4">
+                <div class="text-center">
+                    <div class="mb-4 position-relative">
+                        <img src="../../assets/images/doctors/<?php echo $doctor['image']; ?>" 
+                             class="rounded-circle shadow-sm border border-5 border-light" 
+                             width="180" height="180" 
+                             style="object-fit: cover; border-color: var(--light-bg) !important;">
                     </div>
                     
-                    <div class="d-flex align-items-center">
-                        <div class="icon-sm bg-light text-primary rounded-circle me-3 text-center" style="width: 35px; height: 35px; line-height: 35px;">
-                            <i class="fas fa-door-open"></i>
+                    <h4 class="fw-bold mb-1 text-navy"><?php echo $doctor['name']; ?></h4>
+                    <p class="badge rounded-pill px-3 py-2 mb-3 shadow-sm" style="background-color: var(--light-bg); color: var(--secondary-cyan); font-size: 0.9rem;">
+                        <i class="fas fa-stethoscope me-1"></i> <?php echo $doctor['specialization']; ?>
+                    </p>
+
+                    <div class="d-grid gap-2 mb-4">
+                        <a href="book-appointment.php?doctor_id=<?php echo $doctor['id']; ?>" class="btn btn-primary btn-lg rounded-pill shadow" style="background-color: var(--secondary-cyan); border: none;">
+                            <i class="fas fa-calendar-check me-2"></i> অ্যাপয়েন্টমেন্ট নিন
+                        </a>
+                    </div>
+
+                    <div class="text-start border-top pt-3 mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icon-sm bg-light text-primary rounded-circle me-3 text-center" style="width: 35px; height: 35px; line-height: 35px;">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div>
+                                <p class="small text-muted mb-0">ভিজিট ফি</p>
+                                <span class="fw-bold text-success">৳ <?php echo $doctor['fee']; ?> (প্রতি ভিজিট)</span>
+                            </div>
                         </div>
-                        <div>
-                            <p class="small text-muted mb-0">চেম্বার/রুম নং</p>
-                            <span class="fw-bold text-navy"><?php echo $doctor['chamber_no'] ? $doctor['chamber_no'] : 'তথ্য নেই'; ?></span>
+                        
+                        <div class="d-flex align-items-center">
+                            <div class="icon-sm bg-light text-primary rounded-circle me-3 text-center" style="width: 35px; height: 35px; line-height: 35px;">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div>
+                                <p class="small text-muted mb-0">চেম্বার/রুম নং</p>
+                                <span class="fw-bold text-navy"><?php echo $doctor['chamber_no'] ? $doctor['chamber_no'] : 'তথ্য নেই'; ?></span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ★ নতুন ডিজিটাল প্রোফাইল QR কোড কার্ড ★ -->
+                <div class="card border-0 bg-light rounded-4 overflow-hidden text-center p-3 mt-2 shadow-sm" style="border-top: 4px solid var(--secondary-cyan) !important;">
+                    <h6 class="fw-bold text-navy small mb-3">ডিজিটাল প্রোফাইল কোড</h6>
+                    
+                    <div class="qr-box d-inline-block p-2 rounded-4 mb-2 bg-white" style="border: 2px dashed var(--secondary-cyan);">
+                        <img src="<?php echo $profile_qr_url; ?>" alt="Profile QR" class="img-fluid" style="width: 110px; height: 110px;">
+                    </div>
+                    
+                    <p class="text-muted mb-1" style="font-size: 10px; line-height: 1.3;">
+                        এই কোডটি মোবাইলে স্ক্যান করে ডাক্তারের তথ্য ও হাসপাতালের নম্বর সেভ করে রাখুন।
+                    </p>
+
+                    <div class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mt-1" style="font-size: 9px; font-weight: 700;">
+                        <i class="fas fa-check-circle me-1"></i> VERIFIED PROFILE
                     </div>
                 </div>
             </div>
@@ -113,76 +144,60 @@ if (!$doctor) {
                 </div>
                 <?php endif; ?>
 
-                <!-- ডাইনামিক সময়সূচি (তারিখ এবং সাপ্তাহিক উভয়ই সাপোর্ট করবে) -->
-<div class="mb-2">
-    <h5 class="fw-bold border-bottom pb-2 mb-3 text-navy">
-        <i class="fas fa-clock me-2 text-primary"></i> চেম্বারের সময়সূচি
-    </h5>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover shadow-sm rounded-3 overflow-hidden">
-            <thead class="table-primary text-white" style="background-color: var(--primary-navy) !important;">
-                <tr>
-                    <th>দিন / তারিখ</th>
-                    <th>ধরণ</th>
-                    <th>সময়</th>
-                    <th>অবস্থা</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                // ডাটাবেজ থেকে এই ডাক্তারের সব শিডিউল আনা (তারিখ থাকলে সেটি আগে দেখাবে)
-                $s_query = mysqli_query($conn, "SELECT * FROM doctor_schedules WHERE doctor_id = '$doctor_id' ORDER BY schedule_date DESC, FIELD(day_of_week, 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')");
-                
-                if(mysqli_num_rows($s_query) > 0):
-                    while($s = mysqli_fetch_assoc($s_query)): 
-                        
-                        // দিনের নাম বাংলায় রূপান্তর
-                        $days_bn = ['Saturday'=>'শনিবার', 'Sunday'=>'রবিবার', 'Monday'=>'সোমবার', 'Tuesday'=>'মঙ্গলবার', 'Wednesday'=>'বুধবার', 'Thursday'=>'বৃহস্পতিবার', 'Friday'=>'শুক্রবার'];
-                        $day_name_bn = $days_bn[$s['day_of_week']] ?? $s['day_of_week'];
-                ?>
-                    <tr>
-                        <td class="fw-bold text-navy">
-                            <?php 
-                                if(!empty($s['schedule_date'])) {
-                                    // যদি নির্দিষ্ট তারিখ থাকে (মাসে ১ দিন বা ১৫ দিনে ১ দিন বসার জন্য)
-                                    echo date('d M, Y', strtotime($s['schedule_date'])) . " ($day_name_bn)";
-                                } else {
-                                    // যদি সাপ্তাহিক শিডিউল হয়
-                                    echo $day_name_bn;
-                                }
-                            ?>
-                        </td>
-                        <td>
-                            <?php 
-                                if(!empty($s['schedule_date'])) {
-                                    echo '<span class="badge bg-danger rounded-pill px-2" style="font-size:10px;">একক তারিখ</span>';
-                                } else {
-                                    echo '<span class="badge bg-primary rounded-pill px-2" style="font-size:10px;">প্রতি সপ্তাহ</span>';
-                                }
-                            ?>
-                        </td>
-                        <td>
-                            <i class="far fa-clock me-1 text-info"></i>
-                            <?php echo date('h:i A', strtotime($s['start_time'])) . " - " . date('h:i A', strtotime($s['end_time'])); ?>
-                        </td>
-                        <td>
-                            <?php if($s['is_available'] == 1): ?>
-                                <span class="badge bg-success rounded-pill px-3">সক্রিয়</span>
-                            <?php else: ?>
-                                <span class="badge bg-danger rounded-pill px-3">বন্ধ</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endwhile; else: ?>
-                    <tr><td colspan="4" class="text-center py-4 text-muted">বর্তমানে কোনো সময়সূচি সেট করা নেই।</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-
-
+                <!-- ডাইনামিক সময়সূচি -->
+                <div class="mb-2">
+                    <h5 class="fw-bold border-bottom pb-2 mb-3 text-navy">
+                        <i class="fas fa-clock me-2 text-primary"></i> চেম্বারের সময়সূচি
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover shadow-sm rounded-3 overflow-hidden">
+                            <thead class="table-primary text-white" style="background-color: var(--primary-navy) !important;">
+                                <tr>
+                                    <th>দিন / তারিখ</th>
+                                    <th>ধরণ</th>
+                                    <th>সময়</th>
+                                    <th>অবস্থা</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                $s_query = mysqli_query($conn, "SELECT * FROM doctor_schedules WHERE doctor_id = '$doctor_id' ORDER BY schedule_date DESC, FIELD(day_of_week, 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')");
+                                
+                                if(mysqli_num_rows($s_query) > 0):
+                                    while($s = mysqli_fetch_assoc($s_query)): 
+                                        $days_bn = ['Saturday'=>'শনিবার', 'Sunday'=>'রবিবার', 'Monday'=>'সোমবার', 'Tuesday'=>'মঙ্গলবার', 'Wednesday'=>'বুধবার', 'Thursday'=>'বৃহস্পতিবার', 'Friday'=>'শুক্রবার'];
+                                        $day_name_bn = $days_bn[$s['day_of_week']] ?? $s['day_of_week'];
+                                ?>
+                                    <tr>
+                                        <td class="fw-bold text-navy">
+                                            <?php 
+                                                if(!empty($s['schedule_date'])) {
+                                                    echo date('d M, Y', strtotime($s['schedule_date'])) . " ($day_name_bn)";
+                                                } else {
+                                                    echo $day_name_bn;
+                                                }
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <?php echo !empty($s['schedule_date']) ? '<span class="badge bg-danger rounded-pill px-2" style="font-size:10px;">একক তারিখ</span>' : '<span class="badge bg-primary rounded-pill px-2" style="font-size:10px;">প্রতি সপ্তাহ</span>'; ?>
+                                        </td>
+                                        <td>
+                                            <i class="far fa-clock me-1 text-info"></i>
+                                            <?php echo date('h:i A', strtotime($s['start_time'])) . " - " . date('h:i A', strtotime($s['end_time'])); ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?php echo ($s['is_available'] == 1) ? 'bg-success' : 'bg-danger'; ?> rounded-pill px-3">
+                                                <?php echo ($s['is_available'] == 1) ? 'সক্রিয়' : 'বন্ধ'; ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; else: ?>
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">বর্তমানে কোনো সময়সূচি সেট করা নেই।</td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
                 <div class="alert alert-info border-0 shadow-sm rounded-4 mt-4 d-flex align-items-center">
                     <i class="fas fa-info-circle fa-2x me-3 opacity-75"></i>
@@ -197,9 +212,9 @@ if (!$doctor) {
 </div>
 
 <style>
+.qr-box { transition: 0.3s; }
+.qr-box:hover { transform: scale(1.05); }
 .text-navy { color: var(--primary-navy); }
-.breadcrumb-item a:hover { color: var(--secondary-cyan) !important; }
-.card { transition: all 0.3s ease; }
 .table thead th { background-color: var(--primary-navy) !important; color: white !important; border: none; }
 </style>
 

@@ -132,7 +132,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>index.php">হোম</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>modules/public/doctors.php">ডাক্তারবৃন্দ</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#services">সেবাসমূহ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#services">সেবাসমূহ</a></li>মে
                     <li class="nav-item"><a class="nav-link" href="<?php echo BASE_URL; ?>#contact">যোগাযোগ</a></li>
                     
                     <?php if(isset($_SESSION['user_role'])): ?>

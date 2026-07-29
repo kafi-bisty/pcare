@@ -1,17 +1,19 @@
 <?php
 /**
- * Patient Care Hospital - Standard Reception Token
- * Exact Same Design as Admin Official Ticket
+ * Patient Care Hospital - Premium Reception Token
+ * Updated with Doctor Profile Image & Profile QR
  */
 session_start();
 include_once '../../config/database.php';
+include_once '../../config/constants.php'; // BASE_URL এর জন্য
 
-// ১. আইডি রিসিভ ও ডাটা সংগ্রহ (অ্যাপয়েন্টমেন্ট টেবিল থেকে)
+// ১. আইডি রিসিভ ও ডাটা সংগ্রহ
 if (!isset($_GET['id'])) { die("ID Missing!"); }
 $id = mysqli_real_escape_string($conn, $_GET['id']);
 
+// কুয়েরিতে d.image এবং d.id (doctor_id হিসেবে) নিশ্চিত করা হয়েছে
 $query = mysqli_query($conn, "
-    SELECT a.*, d.name as doctor_name, d.chamber_no, d.fee 
+    SELECT a.*, d.id as doctor_id, d.name as doctor_name, d.chamber_no, d.fee, d.image, d.specialization 
     FROM appointments a 
     JOIN doctors d ON a.doctor_id = d.id 
     WHERE a.id = '$id'
@@ -20,9 +22,13 @@ $data = mysqli_fetch_assoc($query);
 
 if (!$data) { die("Record Not Found!"); }
 
-// ২. ডাইনামিক কিউআর কোড
-$qr_content = "Serial: #$id | Patient: " . $data['patient_name'] . " | Doctor: " . $data['doctor_name'];
+// ২. সিরিয়াল ভেরিফিকেশন কিউআর কোড (নিচের বড় কোডটি)
+$qr_content = "Serial: #$id | Patient: " . $data['patient_name'] . " | Status: Paid";
 $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . urlencode($qr_content);
+
+// ৩. ডাক্তারের প্রোফাইল লিঙ্কের জন্য ইউআরএল এবং কিউআর কোড
+$profile_link = BASE_URL . "modules/public/doctor-profile.php?id=" . $data['doctor_id'];
+$qr_profile_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . urlencode($profile_link);
 ?>
 <!DOCTYPE html>
 <html lang="bn">
@@ -41,7 +47,6 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
             display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
-        /* অফিসিয়াল টিকেট বক্স */
         .govt-ticket {
             width: 85mm;
             background: #fff;
@@ -52,7 +57,6 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
             position: relative;
         }
 
-        /* অফিসিয়াল ওয়াটারমার্ক */
         .govt-ticket::before {
             content: "OFFICIAL";
             position: absolute;
@@ -79,7 +83,6 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
             margin-top: 5px; font-weight: bold; text-transform: uppercase;
         }
 
-        /* সিরিয়াল নম্বর সেকশন */
         .serial-section {
             display: flex; justify-content: space-between; align-items: center;
             background: #fcfcfc; border: 1px solid #eee;
@@ -87,41 +90,18 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
         }
         .serial-box h2 { margin: 0; font-size: 26px; color: #d32f2f; font-weight: 800; }
 
-        /* ইনফরমেশন টেবিল */
         .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         .info-table td { padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f9f9f9; }
         .label { color: #666; width: 35%; font-weight: 600; }
         .value { color: #000; font-weight: 700; }
 
-        /* ডাক্তার বক্স */
-        .doctor-box {
-            border: 1.5px dashed #0A2647;
-            padding: 12px; border-radius: 5px;
-            margin-bottom: 15px; background: #f8faff;
-        }
-        .doctor-box strong { font-size: 15px; color: #0A2647; display: block; margin-top: 2px; }
-
-        .footer-grid {
-            display: flex; justify-content: space-between; align-items: center;
-            border-top: 1.5px solid #0A2647; padding-top: 10px;
-        }
-        .qr-code img { width: 80px; height: 80px; border: 1px solid #eee; padding: 2px; }
-        .instructions { font-size: 10px; color: #555; text-align: left; line-height: 1.4; }
-
-        .footer-msg {
-            background: #0A2647; color: white;
-            padding: 8px; text-align: center;
-            font-size: 11px; margin-top: 15px; border-radius: 2px;
-        }
-
+        /* প্রিন্ট সেটিংস */
         .no-print { position: fixed; bottom: 20px; text-align: center; width: 100%; z-index: 100; }
         .btn-official {
             background: #0A2647; color: white; border: none;
             padding: 12px 30px; border-radius: 50px; cursor: pointer;
-            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: 0.3s;
+            font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        .btn-official:hover { background: #2AA7E5; transform: scale(1.05); }
 
         @media print {
             .no-print { display: none !important; }
@@ -175,23 +155,42 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=" . url
             </tr>
         </table>
 
-        <!-- নির্ধারিত ডাক্তার -->
-        <div class="doctor-box">
-            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #666;">Consultant Physician</span>
-            <strong><?php echo htmlspecialchars($data['doctor_name']); ?></strong>
-            <small style="font-size: 11px; color: #444;">Room: <?php echo $data['chamber_no'] ?? 'N/A'; ?> | Fee: ৳<?php echo number_format($data['fee']); ?> (Paid)</small>
+        <!-- নির্ধারিত ডাক্তার সেকশন (ছবি ও কিউআর সহ) -->
+        <div style="border: 1.5px dashed #0A2647; padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8faff; position: relative;">
+            <div style="display: flex; align-items: center;">
+                <!-- ডাক্তারের ছোট ছবি -->
+                <div style="margin-right: 12px;">
+                    <img src="../../assets/images/doctors/<?php echo $data['image']; ?>" 
+                         style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid #2AA7E5; object-fit: cover; background: #fff;">
+                </div>
+                
+                <!-- ডাক্তারের তথ্য -->
+                <div style="flex: 1;">
+                    <span style="display: block; font-size: 9px; color: #666; font-weight: bold; text-transform: uppercase;">Consultant Physician</span>
+                    <strong style="font-size: 16px; color: #0A2647; display: block; line-height: 1.2;"><?php echo htmlspecialchars($data['doctor_name']); ?></strong>
+                    <small style="color: #444; font-weight: 600; font-size: 11px;">
+                        Room: <?php echo $data['chamber_no']; ?> | Fee: ৳<?php echo number_format($data['fee']); ?> (Paid)
+                    </small>
+                </div>
+
+                <!-- প্রোফাইল কিউআর কোড -->
+                <div style="text-align: center; border-left: 1px solid #ddd; padding-left: 8px; margin-left: 5px;">
+                    <img src="<?php echo $qr_profile_url; ?>" style="width: 45px; height: 45px;">
+                    <span style="display: block; font-size: 6px; font-weight: bold; color: #2AA7E5; margin-top: 2px; text-transform: uppercase;">Profile</span>
+                </div>
+            </div>
         </div>
 
         <!-- কিউআর ও নির্দেশাবলী -->
         <div class="footer-grid">
             <div class="instructions">
-                <strong>Instructions:</strong><br>
+                <strong style="color:#0A2647">Instructions:</strong><br>
                 1. Ticket is valid for today only.<br>
                 2. Please wait for your serial.<br>
                 3. Preserve this for next visit.
             </div>
             <div class="qr-code">
-                <img src="<?php echo $qr_url; ?>" alt="QR Verification">
+                <img src="<?php echo $qr_url; ?>" alt="Verification QR">
             </div>
         </div>
 
