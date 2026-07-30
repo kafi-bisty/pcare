@@ -144,7 +144,7 @@ include_once '../../includes/header.php';
             <div class="col-md-2"><label class="small fw-bold">পরিমাণ (৳)</label><input type="number" name="amount" class="form-control shadow-none fw-bold" required></div>
             <div class="col-md-4"><label class="small fw-bold">বিবরণ</label><input type="text" name="description" class="form-control shadow-none" placeholder="বিস্তারিত লিখুন"></div>
             <input type="hidden" name="date" value="<?php echo $filter_date; ?>">
-            <div class="col-md-1"><label>&nbsp;</label><button type="submit" name="add_transaction" class="btn btn-primary w-100 fw-bold shadow">Save</button></div>
+            <div class="col-md-1"><label>&nbsp;</label><button type="submit" name="add_transaction" class="btn btn-primary w-80 fw-bold shadow">Save</button></div>
         </form>
     </div>
 
